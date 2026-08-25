@@ -121,6 +121,188 @@ api-key: your_api_key_here
 
 ---
 
+### 2. Get Categories
+
+Fetches categories based on the device's authenticated session style (`finance` or `adult` encoded in the JWT token).
+
+- **Method**: `GET`
+- **Path**: `/app/categories`
+- **Full URL**: `{{BASE_URL}}/app/categories`
+- **Auth**: `api-key` header AND `token` (or `Authorization: Bearer <token>`) required
+
+#### Request Headers
+```http
+api-key: your_api_key_here
+token: your_jwt_token_here
+```
+*or*
+```http
+api-key: your_api_key_here
+Authorization: Bearer your_jwt_token_here
+```
+
+#### Responses
+
+##### ✅ `200 OK` - Success (Finance Mode)
+```json
+{
+  "success": true,
+  "message": "Categories fetched successfully",
+  "data": [
+    {
+      "_id": "67b73a01001a1b2c3d4e0001",
+      "name": "Stock Market Basics",
+      "videoCount": 15
+    },
+    {
+      "_id": "67b73a01001a1b2c3d4e0002",
+      "name": "Cryptocurrency & Blockchain",
+      "videoCount": 12
+    },
+    {
+      "_id": "67b73a01001a1b2c3d4e0003",
+      "name": "Personal Finance & Budgeting",
+      "videoCount": 20
+    }
+  ]
+}
+```
+
+##### ✅ `200 OK` - Success (Adult Mode)
+```json
+{
+  "success": true,
+  "message": "Categories fetched successfully",
+  "data": [
+    {
+      "_id": "67b73b02002a1b2c3d4e0001",
+      "name": "Trending Videos",
+      "videoCount": 28
+    },
+    {
+      "_id": "67b73b02002a1b2c3d4e0002",
+      "name": "Top Rated",
+      "videoCount": 45
+    },
+    {
+      "_id": "67b73b02002a1b2c3d4e0003",
+      "name": "Popular & Featured",
+      "videoCount": 36
+    }
+  ]
+}
+```
+
+##### ❌ `401 Unauthorized` - Missing or Invalid Token / API Key
+```json
+{
+  "success": false,
+  "message": "No token provided, authorization denied"
+}
+```
+
+---
+
+### 3. Save / Unsave Category
+
+Adds or removes a category to/from the user's selected categories list on the authenticated device.
+
+- **Method**: `POST`
+- **Path**: `/app/categories/save`
+- **Full URL**: `{{BASE_URL}}/app/categories/save`
+- **Auth**: `api-key` header AND `token` (or `Authorization: Bearer <token>`) required
+
+#### Request Headers
+```http
+Content-Type: application/json
+api-key: your_api_key_here
+token: your_jwt_token_here
+```
+*or*
+```http
+Content-Type: application/json
+api-key: your_api_key_here
+Authorization: Bearer your_jwt_token_here
+```
+
+#### Request Body
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `categoryId` | `string` | **Yes** | The category ID to save or remove. |
+| `isSave` | `boolean` | **Yes** | `true` to add to selected categories, `false` to remove from selected categories. |
+
+#### Example Request
+```json
+{
+  "categoryId": "67b73a01001a1b2c3d4e0001",
+  "isSave": true
+}
+```
+
+#### Responses
+
+##### ✅ `200 OK` - Success
+```json
+{
+  "success": true,
+  "message": "Category saved successfully",
+  "data": {
+    "deviceId": "67b7381290abcdef12345678",
+    "deviceUniqueId": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
+    "appUniqueId": "com.brazz.learning",
+    "appStyle": "finance",
+    "selectedCategories": [
+      "67b73a01001a1b2c3d4e0001"
+    ]
+  }
+}
+```
+
+##### ❌ `400 Bad Request` - Validation Error
+```json
+{
+  "success": false,
+  "message": "categoryId is required"
+}
+```
+
+##### ❌ `401 Unauthorized` - Missing or Invalid Token / API Key
+```json
+{
+  "success": false,
+  "message": "No token provided, authorization denied"
+}
+```
+
+---
+
+### 4. Get Selected Categories
+
+Retrieves the currently saved category selections for the authenticated device.
+
+- **Method**: `GET`
+- **Path**: `/app/categories/selected`
+- **Full URL**: `{{BASE_URL}}/app/categories/selected`
+- **Auth**: `api-key` header AND `token` (or `Authorization: Bearer <token>`) required
+
+#### Responses
+
+##### ✅ `200 OK` - Success
+```json
+{
+  "success": true,
+  "message": "Selected categories fetched successfully",
+  "data": {
+    "selectedCategories": [
+      "67b73a01001a1b2c3d4e0001",
+      "67b73a01001a1b2c3d4e0003"
+    ]
+  }
+}
+```
+
+---
+
 ## Standard Response Format
 
 All API responses follow a consistent JSON envelope:

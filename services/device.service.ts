@@ -20,6 +20,7 @@ class DeviceService {
                     appUniqueId,
                     pushToken: pushToken || null,
                     appStyle: 'finance',
+                    selectedCategories: [],
                 });
             } else if (device.appUniqueId !== appUniqueId) {
                 // Same device but different appUniqueId -> update appUniqueId, pushToken, and reset appStyle to finance
@@ -55,6 +56,7 @@ class DeviceService {
                     appUniqueId,
                     token,
                     appStyle: device.appStyle,
+                    selectedCategories: device.selectedCategories || [],
                 },
             });
         } catch (error: any) {
@@ -67,3 +69,5 @@ class DeviceService {
 }
 
 export default new DeviceService();
+
+

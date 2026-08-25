@@ -4,8 +4,9 @@ import jwt from 'jsonwebtoken';
 export interface AuthRequest extends Request {
     device?: {
         deviceUniqueId: string;
-        appUniqueId?: string;
+        appUniqueId: string;
         _id: string;
+        appStyle: 'finance' | 'adult';
     };
 }
 
@@ -35,7 +36,9 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as {
             deviceUniqueId: string;
+            appUniqueId: string;
             _id: string;
+            appStyle: 'finance' | 'adult';
         };
 
         req.device = decoded;
