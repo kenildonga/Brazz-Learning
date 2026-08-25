@@ -281,8 +281,8 @@ Authorization: Bearer your_jwt_token_here
 Retrieves the currently saved category selections for the authenticated device.
 
 - **Method**: `GET`
-- **Path**: `/app/categories/selected`
-- **Full URL**: `{{BASE_URL}}/app/categories/selected`
+- **Path**: `/app/categories/saved`
+- **Full URL**: `{{BASE_URL}}/app/categories/saved`
 - **Auth**: `api-key` header AND `token` (or `Authorization: Bearer <token>`) required
 
 #### Responses

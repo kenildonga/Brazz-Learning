@@ -7,28 +7,12 @@ import AdultService from '../services/app/adult.service';
 
 const router = Router();
 
-const categoryHandler = async (req: AuthRequest, res: Response) => {
-    if (req.device?.appStyle === 'adult') {
-        return AdultService.getCategories(req, res);
-    }
-    return FinanceService.getCategories(req, res);
+const handle = (method: keyof typeof AdultService) => (req: AuthRequest, res: Response) => {
+    const service = req.device?.appStyle === 'adult' ? AdultService : FinanceService;
+    return service[method](req, res);
 };
 
-const saveCategoryHandler = async (req: AuthRequest, res: Response) => {
-    if (req.device?.appStyle === 'adult') {
-        return AdultService.saveCategories(req, res);
-    }
-    return FinanceService.saveCategories(req, res);
-};
-
-const getSelectedCategoryHandler = async (req: AuthRequest, res: Response) => {
-    if (req.device?.appStyle === 'adult') {
-        return AdultService.getSelectedCategories(req, res);
-    }
-    return FinanceService.getSelectedCategories(req, res);
-};
-
-router.get('/categories', apiKeyValidation, tokenValidation, categoryHandler);
+router.get('/categories', apiKeyValidation, tokenValidation, handle('getCategories'));
 
 router.post(
     '/categories/save',
@@ -40,14 +24,14 @@ router.post(
             isSave: Joi.boolean().required(),
         })
     ),
-    saveCategoryHandler
+    handle('saveCategories')
 );
 
 router.get(
-    '/categories/selected',
+    '/categories/saved',
     apiKeyValidation,
     tokenValidation,
-    getSelectedCategoryHandler
+    handle('getSavedCategories')
 );
 
 export default router;

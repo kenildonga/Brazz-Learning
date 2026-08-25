@@ -103,7 +103,7 @@ class FinanceService {
         }
     };
 
-    getSelectedCategories = async (req: AuthRequest, res: Response) => {
+    getSavedCategories = async (req: AuthRequest, res: Response) => {
         try {
             const deviceId = req.device?._id;
             const deviceUniqueId = req.device?.deviceUniqueId;
