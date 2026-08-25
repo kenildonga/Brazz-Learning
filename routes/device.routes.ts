@@ -11,8 +11,9 @@ router.post(
     apiKeyValidation,
     validate(
         Joi.object({
-            deviceUnieqId: Joi.string().required(),
-            pushToken: Joi.string().required(),
+            deviceUniqueId: Joi.string().required(),
+            appUniqueId: Joi.string().required(),
+            pushToken: Joi.string().allow(null, '').optional(),
         })
     ),
     DeviceController.register

@@ -58,13 +58,15 @@ api-key: your_api_key_here
 #### Request Body
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `deviceUnieqId` | `string` | **Yes** | Unique hardware or vendor device identifier (UUID/IDFV/Android ID). |
-| `pushToken` | `string` | **Yes** | Push notification token (e.g., FCM / APNs). |
+| `deviceUniqueId` | `string` | **Yes** | Unique hardware or vendor device identifier (UUID/IDFV/Android ID). |
+| `appUniqueId` | `string` | **Yes** | Unique application identifier (Bundle ID / Package Name). |
+| `pushToken` | `string \| null` | No | Push notification token (e.g., FCM / APNs). Can be omitted or `null`. |
 
 #### Example Request
 ```json
 {
-  "deviceUnieqId": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
+  "deviceUniqueId": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
+  "appUniqueId": "com.brazz.learning",
   "pushToken": "fcm_token_example_abc123xyz"
 }
 ```
@@ -78,7 +80,8 @@ api-key: your_api_key_here
   "message": "Device registered successfully",
   "data": {
     "deviceId": "67b7381290abcdef12345678",
-    "deviceUnieqId": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
+    "deviceUniqueId": "e3b0c442-98fc-1c14-9afb-4c8996fb9242",
+    "appUniqueId": "com.brazz.learning",
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
@@ -89,7 +92,7 @@ api-key: your_api_key_here
 ```json
 {
   "success": false,
-  "message": "deviceUnieqId is required"
+  "message": "deviceUniqueId is required"
 }
 ```
 
@@ -149,7 +152,7 @@ All API responses follow a consistent JSON envelope:
 const API_BASE_URL = 'http://localhost:5000/api/v1';
 const API_KEY = 'your_api_key_here';
 
-export async function registerDevice(deviceUnieqId: string, pushToken: string) {
+export async function registerDevice(deviceUniqueId: string, appUniqueId: string, pushToken: string) {
   const response = await fetch(`${API_BASE_URL}/device/register`, {
     method: 'POST',
     headers: {
@@ -157,7 +160,8 @@ export async function registerDevice(deviceUnieqId: string, pushToken: string) {
       'api-key': API_KEY,
     },
     body: JSON.stringify({
-      deviceUnieqId,
+      deviceUniqueId,
+      appUniqueId,
       pushToken,
     }),
   });
@@ -187,9 +191,10 @@ const api = axios.create({
   },
 });
 
-export async function registerDevice(deviceUnieqId: string, pushToken: string) {
+export async function registerDevice(deviceUniqueId: string, appUniqueId: string, pushToken: string) {
   const response = await api.post('/device/register', {
-    deviceUnieqId,
+    deviceUniqueId,
+    appUniqueId,
     pushToken,
   });
 

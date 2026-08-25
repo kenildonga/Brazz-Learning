@@ -5,16 +5,33 @@ import jwt from 'jsonwebtoken';
 class DeviceService {
     register = async (req: Request, res: Response) => {
         try {
-            const { deviceUnieqId, pushToken } = req.body as {
-                deviceUnieqId: string;
-                pushToken: string;
+            const { deviceUniqueId, appUniqueId, pushToken } = req.body as {
+                deviceUniqueId: string;
+                appUniqueId: string;
+                pushToken?: string | null;
             };
 
-            const device = await Device.findOneAndUpdate(
-                { deviceUnieqId },
-                { pushToken },
-                { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
-            );
+            let device = await Device.findOne({ deviceUniqueId });
+
+            if (!device) {
+                // New device record
+                device = await Device.create({
+                    deviceUniqueId,
+                    appUniqueId,
+                    pushToken: pushToken || null,
+                    appStyle: 'finance',
+                });
+            } else if (device.appUniqueId !== appUniqueId) {
+                // Same device but different appUniqueId -> update appUniqueId, pushToken, and reset appStyle to finance
+                device.appUniqueId = appUniqueId;
+                device.pushToken = pushToken || null;
+                device.appStyle = 'finance';
+                await device.save();
+            } else {
+                // Same device and same appUniqueId -> only update pushToken, preserve existing appStyle
+                device.pushToken = pushToken || null;
+                await device.save();
+            }
 
             if (!device) {
                 return res.status(500).json({
@@ -24,7 +41,7 @@ class DeviceService {
             }
 
             const token = jwt.sign(
-                { deviceUnieqId: device.deviceUnieqId, _id: device._id },
+                { deviceUniqueId: device.deviceUniqueId, appUniqueId: device.appUniqueId, _id: device._id, appStyle: device.appStyle },
                 process.env.JWT_SECRET || 'default_secret',
                 { expiresIn: '1h' }
             );
@@ -34,8 +51,10 @@ class DeviceService {
                 message: 'Device registered successfully',
                 data: {
                     deviceId: device._id,
-                    deviceUnieqId,
+                    deviceUniqueId,
+                    appUniqueId,
                     token,
+                    appStyle: device.appStyle,
                 },
             });
         } catch (error: any) {

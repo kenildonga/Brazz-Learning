@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
     device?: {
-        deviceUnieqId: string;
+        deviceUniqueId: string;
+        appUniqueId?: string;
         _id: string;
     };
 }
@@ -33,7 +34,7 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as {
-            deviceUnieqId: string;
+            deviceUniqueId: string;
             _id: string;
         };
 

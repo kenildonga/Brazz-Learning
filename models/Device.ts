@@ -1,13 +1,19 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IDevice extends Document {
-    deviceUnieqId: string;
-    pushToken: string;
+    deviceUniqueId: string;
+    appUniqueId: string;
+    pushToken?: string | null;
+    appStyle: 'finance' | 'adult';
 }
 
 const DeviceSchema: Schema = new Schema({
-    deviceUnieqId: { type: String, required: true, unique: true },
-    pushToken: { type: String, required: true },
+    deviceUniqueId: { type: String, required: true },
+    appUniqueId: { type: String, required: true },
+    pushToken: { type: String, default: null },
+    appStyle: { type: String, enum: ['finance', 'adult'], required: true, default: 'finance' },
 }, { timestamps: true, versionKey: false });
+
+DeviceSchema.index({ deviceUniqueId: 1 }, { unique: true });
 
 export default mongoose.model<IDevice>('Device', DeviceSchema);
