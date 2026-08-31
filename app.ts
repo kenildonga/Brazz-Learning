@@ -12,12 +12,12 @@ app.use(cors());
 
 // Routes
 import deviceRoutes from './routes/device.routes';
-import appRoutes from './routes/app.routes';
+import categoryRoutes from './routes/category.routes';
 
 const prefix = '/api/v1';
 
 app.use(`${prefix}/device`, deviceRoutes);
-app.use(`${prefix}/app`, appRoutes);
+app.use(`${prefix}/app/categories`, categoryRoutes);
 
 // Base route
 app.get('/{*any}', (req, res) => {

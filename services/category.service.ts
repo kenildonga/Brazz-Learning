@@ -1,47 +1,45 @@
 import { Response } from 'express';
-import { AuthRequest } from '../../middleware/auth';
-import Device from '../../models/Device';
+import { AuthRequest } from '../middleware/auth';
+import Device from '../models/Device';
+import { getAppModels } from '../models/appModels';
 
-class AdultService {
+class CategoryService {
     getCategories = async (req: AuthRequest, res: Response) => {
         try {
-            const categories = [
-                {
-                    _id: '67b73b02002a1b2c3d4e0001',
-                    name: 'Trending Videos',
-                    videoCount: 28,
-                },
-                {
-                    _id: '67b73b02002a1b2c3d4e0002',
-                    name: 'Top Rated',
-                    videoCount: 45,
-                },
-                {
-                    _id: '67b73b02002a1b2c3d4e0003',
-                    name: 'Popular & Featured',
-                    videoCount: 36,
-                },
-                {
-                    _id: '67b73b02002a1b2c3d4e0004',
-                    name: 'Latest Releases',
-                    videoCount: 19,
-                },
-                {
-                    _id: '67b73b02002a1b2c3d4e0005',
-                    name: 'HD & 4K Quality',
-                    videoCount: 52,
-                },
-                {
-                    _id: '67b73b02002a1b2c3d4e0006',
-                    name: 'Recommended For You',
-                    videoCount: 23,
-                },
-            ];
+            const appStyle = req.device?.appStyle || 'finance';
+            const { Category, Video } = getAppModels(appStyle);
+
+            const categories = await Category.find({}, { name: 1 }).lean();
+            const categoryIds = categories.map((category) => category._id);
+
+            const countMap = new Map<string, number>();
+            if (categoryIds.length) {
+                try {
+                    const counts = await Video.aggregate([
+                        { $match: { categoryIds: { $in: categoryIds } } },
+                        { $unwind: '$categoryIds' },
+                        { $match: { categoryIds: { $in: categoryIds } } },
+                        { $group: { _id: '$categoryIds', count: { $sum: 1 } } },
+                    ]).option({ maxTimeMS: 10000 });
+
+                    for (const row of counts) {
+                        countMap.set(String(row._id), row.count);
+                    }
+                } catch {
+                    // Counts are optional; still return categories so the client is not left hanging.
+                }
+            }
+
+            const data = categories.map((category) => ({
+                _id: category._id,
+                name: category.name,
+                videoCount: countMap.get(String(category._id)) || 0,
+            }));
 
             return res.status(200).json({
                 success: true,
                 message: 'Categories fetched successfully',
-                data: categories,
+                data,
             });
         } catch (error: any) {
             return res.status(500).json({
@@ -135,4 +133,4 @@ class AdultService {
     };
 }
 
-export default new AdultService();
+export default new CategoryService();
