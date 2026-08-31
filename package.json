@@ -20,13 +20,15 @@
     "express": "^5.2.1",
     "joi": "^18.2.5",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.9.3"
+    "mongoose": "^9.9.3",
+    "node-cache": "^5.1.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.2.0",
+    "@types/node-cache": "^4.2.5",
     "typescript": "^5.9.3"
   }
 }

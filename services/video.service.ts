@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { getAppModels } from '../models/appModels';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
+import { fetchM3u8Url } from '../utils/m3u8';
 
 const LIST_PROJECTION = { title: 1, thumbnail: 1, duration: 1 };
 const RELATED_SIZE = 30;
@@ -92,11 +93,20 @@ class VideoService {
                 match.$or = or;
             }
 
-            const relatedVideos = await videoModel.aggregate([
+            const relatedPromise = videoModel.aggregate([
                 { $match: match },
                 { $sample: { size: RELATED_SIZE } },
                 { $project: LIST_PROJECTION },
             ]);
+
+            const movieId = String(video.movieId || '');
+            const scrappedSlug = String(video.scrappedSlug || '');
+            const m3u8Promise =
+                appStyle === 'adult' && movieId && scrappedSlug
+                    ? fetchM3u8Url(movieId, scrappedSlug)
+                    : Promise.resolve(null);
+
+            const [relatedVideos, m3u8] = await Promise.all([relatedPromise, m3u8Promise]);
 
             return res.status(200).json({
                 success: true,
@@ -107,8 +117,9 @@ class VideoService {
                         title: video.title,
                         duration: formatDuration(video.duration as number | null),
                         description: video.description || '',
-                        movieId: video.movieId || '',
+                        movieId,
                         thumbnail: video.thumbnail || '',
+                        m3u8,
                     },
                     relatedVideos,
                 },
