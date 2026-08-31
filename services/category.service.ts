@@ -2,17 +2,16 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import Device from '../models/Device';
 import { getAppModels } from '../models/appModels';
+import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 
 class CategoryService {
     getCategories = async (req: AuthRequest, res: Response) => {
         try {
             const appStyle = req.device?.appStyle || 'finance';
             const { Category, Video } = getAppModels(appStyle);
-            const limit = 100;
             const pageQuery = req.query.page;
             const hasPage = pageQuery !== undefined && pageQuery !== '';
-            const parsedPage = Number(pageQuery);
-            const page = hasPage && Number.isInteger(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
+            const page = parsePage(pageQuery);
 
             const categories = await Category.find({}, { name: 1 }).lean();
             const categoryIds = categories.map((category) => category._id);
@@ -47,22 +46,22 @@ class CategoryService {
                 return res.status(200).json({
                     success: true,
                     message: 'Categories fetched successfully',
-                    data: sorted.slice(0, limit),
+                    data: sorted.slice(0, PAGE_LIMIT),
                 });
             }
 
             const total = sorted.length;
-            const skip = (page - 1) * limit;
+            const skip = (page - 1) * PAGE_LIMIT;
 
             return res.status(200).json({
                 success: true,
                 message: 'Categories fetched successfully',
-                data: sorted.slice(skip, skip + limit),
+                data: sorted.slice(skip, skip + PAGE_LIMIT),
                 pagination: {
                     page,
-                    limit,
+                    limit: PAGE_LIMIT,
                     total,
-                    totalPages: Math.ceil(total / limit) || 0,
+                    totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
                 },
             });
         } catch (error: any) {

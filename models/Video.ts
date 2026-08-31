@@ -34,4 +34,7 @@ const VideoSchema = new Schema<IVideo>(
     { timestamps: true, versionKey: false, collection: 'videos' },
 );
 
+VideoSchema.index({ pornstarIds: 1 });
+VideoSchema.index({ categoryIds: 1 });
+
 export default mongoose.model<IVideo>('Video', VideoSchema);

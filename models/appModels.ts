@@ -12,7 +12,8 @@ export function getAppModels(appStyle: AppStyle) {
         ? {
             Category: FinanceCategory,
             Video: FinanceVideo,
-            Influencer: FinanceInfluencer,
+            Pornstar: FinanceInfluencer,
+            personIdField: 'influencerIds' as const,
             categoryCollection: 'finance_categories',
             videoCollection: 'finance_videos',
         }
@@ -20,6 +21,7 @@ export function getAppModels(appStyle: AppStyle) {
             Category: Category,
             Video: Video,
             Pornstar: Pornstar,
+            personIdField: 'pornstarIds' as const,
             categoryCollection: 'categories',
             videoCollection: 'videos',
         };

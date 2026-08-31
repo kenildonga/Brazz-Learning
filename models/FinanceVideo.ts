@@ -34,4 +34,7 @@ const FinanceVideoSchema = new Schema<IFinanceVideo>(
     { timestamps: true, versionKey: false, collection: 'finance_videos' },
 );
 
+FinanceVideoSchema.index({ influencerIds: 1 });
+FinanceVideoSchema.index({ categoryIds: 1 });
+
 export default mongoose.model<IFinanceVideo>('FinanceVideo', FinanceVideoSchema);

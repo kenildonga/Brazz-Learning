@@ -13,11 +13,15 @@ app.use(cors());
 // Routes
 import deviceRoutes from './routes/device.routes';
 import categoryRoutes from './routes/category.routes';
+import pornstarRoutes from './routes/pornstar.routes';
+import videoRoutes from './routes/video.routes';
 
 const prefix = '/api/v1';
 
 app.use(`${prefix}/device`, deviceRoutes);
 app.use(`${prefix}/app/categories`, categoryRoutes);
+app.use(`${prefix}/app/pornstars`, pornstarRoutes);
+app.use(`${prefix}/app/videos`, videoRoutes);
 
 // Base route
 app.get('/{*any}', (req, res) => {
