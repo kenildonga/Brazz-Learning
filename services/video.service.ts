@@ -9,10 +9,14 @@ import { fetchM3u8Url } from '../utils/m3u8';
 const LIST_PROJECTION = { title: 1, thumbnail: 1, duration: 1 };
 const RELATED_SIZE = 30;
 
+const NAME_PROJECTION = { name: 1 };
+
 const getVideoModel = (appStyle: 'finance' | 'adult') => {
-    const { Video, personIdField } = getAppModels(appStyle);
+    const { Video, Category, Pornstar, personIdField } = getAppModels(appStyle);
     return {
         videoModel: Video as unknown as mongoose.Model<Record<string, unknown>>,
+        categoryModel: Category,
+        personModel: Pornstar,
         personIdField,
     };
 };
@@ -68,7 +72,7 @@ class VideoService {
             }
 
             const appStyle = req.device?.appStyle || 'finance';
-            const { videoModel, personIdField } = getVideoModel(appStyle);
+            const { videoModel, categoryModel, personModel, personIdField } = getVideoModel(appStyle);
 
             const video = await videoModel.findById(id).lean();
             if (!video) {
@@ -106,7 +110,19 @@ class VideoService {
                     ? fetchM3u8Url(movieId, scrappedSlug)
                     : Promise.resolve(null);
 
-            const [relatedVideos, m3u8] = await Promise.all([relatedPromise, m3u8Promise]);
+            const categoriesPromise = categoryIds.length
+                ? categoryModel.find({ _id: { $in: categoryIds } }, NAME_PROJECTION).lean()
+                : Promise.resolve([]);
+            const peoplePromise = personIds.length
+                ? personModel.find({ _id: { $in: personIds } }, NAME_PROJECTION).lean()
+                : Promise.resolve([]);
+
+            const [relatedVideos, m3u8, categories, peopleIds] = await Promise.all([
+                relatedPromise,
+                m3u8Promise,
+                categoriesPromise,
+                peoplePromise,
+            ]);
 
             return res.status(200).json({
                 success: true,
@@ -120,6 +136,8 @@ class VideoService {
                         movieId,
                         thumbnail: video.thumbnail || '',
                         m3u8,
+                        categories,
+                        peopleIds,
                     },
                     relatedVideos,
                 },

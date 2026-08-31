@@ -8,7 +8,8 @@
     "build": "bun build app.ts --outdir dist --target bun",
     "start": "bun app.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "seed:finance": "bun scripts/seed-finance.ts"
   },
   "keywords": [],
   "author": "",
