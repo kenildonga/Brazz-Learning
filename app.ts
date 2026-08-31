@@ -24,10 +24,11 @@ app.use(`${prefix}/app/pornstars`, pornstarRoutes);
 app.use(`${prefix}/app/videos`, videoRoutes);
 
 // Base route
-app.get('/{*any}', (req, res) => {
-    res.send({
+// --- 404 last ---
+app.use((req, res) => {
+    res.status(404).json({
         success: false,
-        message: 'Route Not Found',
+        message: "Route Not Found",
     });
 });
 
