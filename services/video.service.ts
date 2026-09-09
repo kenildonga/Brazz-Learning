@@ -108,7 +108,7 @@ class VideoService {
             const m3u8Promise =
                 appStyle === 'adult' && movieId && scrappedSlug
                     ? fetchM3u8Url(movieId, scrappedSlug)
-                    : Promise.resolve(null);
+                    : Promise.resolve("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
 
             const categoriesPromise = categoryIds.length
                 ? categoryModel.find({ _id: { $in: categoryIds } }, NAME_PROJECTION).lean()

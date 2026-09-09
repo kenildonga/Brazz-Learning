@@ -44,7 +44,7 @@ class DeviceService {
             const token = jwt.sign(
                 { deviceUniqueId: device.deviceUniqueId, appUniqueId: device.appUniqueId, _id: device._id, appStyle: device.appStyle },
                 process.env.JWT_SECRET || 'default_secret',
-                { expiresIn: '3m' }
+                { expiresIn: '3h' }
             );
 
             return res.status(200).json({
