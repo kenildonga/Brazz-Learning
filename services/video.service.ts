@@ -28,6 +28,18 @@ const toObjectIdArray = (value: unknown) => {
     return value.filter((id) => mongoose.Types.ObjectId.isValid(String(id)));
 };
 
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const parseSearchQuery = (value: unknown) => {
+    if (typeof value === 'string') {
+        return value.trim();
+    }
+    if (Array.isArray(value) && typeof value[0] === 'string') {
+        return value[0].trim();
+    }
+    return '';
+};
+
 class VideoService {
     getVideos = async (req: AuthRequest, res: Response) => {
         try {
@@ -44,6 +56,48 @@ class VideoService {
             return res.status(200).json({
                 success: true,
                 message: 'Videos fetched successfully',
+                data,
+                pagination: {
+                    page,
+                    limit: PAGE_LIMIT,
+                    total,
+                    totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
+                },
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || 'Internal server error',
+            });
+        }
+    };
+
+    searchVideos = async (req: AuthRequest, res: Response) => {
+        try {
+            const q = parseSearchQuery(req.query.q);
+            if (!q) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Search query (q) is required',
+                });
+            }
+
+            const appStyle = req.device?.appStyle || 'finance';
+            const { videoModel } = getVideoModel(appStyle);
+            const page = parsePage(req.query.page);
+            const skip = (page - 1) * PAGE_LIMIT;
+            const filter = {
+                title: { $regex: escapeRegex(q), $options: 'i' },
+            };
+
+            const [data, total] = await Promise.all([
+                videoModel.find(filter, LIST_PROJECTION).sort({ createdAt: -1 }).skip(skip).limit(PAGE_LIMIT).lean(),
+                videoModel.countDocuments(filter),
+            ]);
+
+            return res.status(200).json({
+                success: true,
+                message: 'Videos searched successfully',
                 data,
                 pagination: {
                     page,
