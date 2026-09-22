@@ -5,8 +5,18 @@ import { getAppModels } from '../models/appModels';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
 import { fetchM3u8Url } from '../utils/m3u8';
+import { fetchForYouReels, parseReelsLimit, parseReelsPage, sanitizeReelsFeed } from '../utils/reels';
 
 const LIST_PROJECTION = { title: 1, thumbnail: 1, duration: 1 };
+const FINANCE_TEST_STREAM_URL = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/av1/1080/Big_Buck_Bunny_1080_10s_5MB.mp4';
+const REELS_PROJECTION = {
+    title: 1,
+    thumbnail: 1,
+    duration: 1,
+    description: 1,
+    categoryIds: 1,
+    influencerIds: 1,
+};
 const RELATED_SIZE = 30;
 
 const NAME_PROJECTION = { name: 1 };
@@ -39,6 +49,32 @@ const parseSearchQuery = (value: unknown) => {
     }
     return '';
 };
+
+const mapFinanceVideoToReel = (
+    video: Record<string, unknown>,
+    categoryNames: string[],
+    influencer: { slug?: string; name?: string } | null,
+) => ({
+    id: String(video._id),
+    videoUrl: FINANCE_TEST_STREAM_URL,
+    thumbnailUrl: String(video.thumbnail || ''),
+    title: String(video.title || ''),
+    description: String(video.description || ''),
+    tags: categoryNames,
+    duration: typeof video.duration === 'number' ? video.duration : 0,
+    width: null,
+    height: null,
+    userId: influencer ? String(influencer.slug || 'finance') : 'finance',
+    createdAt: video.createdAt,
+    updatedAt: video.updatedAt,
+    user: {
+        id: influencer ? String(influencer.slug || 'finance') : 'finance',
+        username: influencer?.slug || 'finance',
+        displayName: influencer?.name || 'Finance',
+        avatar: null,
+        verified: false,
+    },
+});
 
 class VideoService {
     getVideos = async (req: AuthRequest, res: Response) => {
@@ -104,6 +140,99 @@ class VideoService {
                     limit: PAGE_LIMIT,
                     total,
                     totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
+                },
+            });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: error.message || 'Internal server error',
+            });
+        }
+    };
+
+    getReels = async (req: AuthRequest, res: Response) => {
+        try {
+            const limit = parseReelsLimit(req.query.limit);
+            if (limit === null) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid limit parameter',
+                });
+            }
+
+            const page = parseReelsPage(req.query.page ?? req.query.nextPage);
+            const appStyle = req.device?.appStyle || 'finance';
+
+            if (appStyle === 'adult') {
+                const data = sanitizeReelsFeed(await fetchForYouReels({ limit, page }));
+
+                return res.status(200).json({
+                    success: true,
+                    message: 'Reels fetched successfully',
+                    data,
+                });
+            }
+
+            const { videoModel, categoryModel, personModel } = getVideoModel('finance');
+            const currentPage = page ?? 1;
+            const videos = await videoModel
+                .find({}, REELS_PROJECTION)
+                .sort({ createdAt: -1 })
+                .skip((currentPage - 1) * limit)
+                .limit(limit + 1)
+                .lean();
+            const hasMore = videos.length > limit;
+            if (hasMore) {
+                videos.pop();
+            }
+
+            const categoryIds = [
+                ...new Set(videos.flatMap((video) => toObjectIdArray(video.categoryIds).map(String))),
+            ];
+            const influencerIds = [
+                ...new Set(videos.flatMap((video) => toObjectIdArray(video.influencerIds).map(String))),
+            ];
+
+            const [categories, influencers] = await Promise.all([
+                categoryIds.length
+                    ? categoryModel.find({ _id: { $in: categoryIds } }, { name: 1 }).lean()
+                    : Promise.resolve([]),
+                influencerIds.length
+                    ? personModel.find({ _id: { $in: influencerIds } }, { name: 1, slug: 1 }).lean()
+                    : Promise.resolve([]),
+            ]);
+
+            const categoryMap = new Map(
+                categories.map((category) => [String(category._id), String(category.name || '')]),
+            );
+            const influencerMap = new Map(
+                influencers.map((influencer) => [
+                    String(influencer._id),
+                    { slug: String(influencer.slug || ''), name: String(influencer.name || '') },
+                ]),
+            );
+
+            const mappedVideos = videos.map((video) => {
+                const videoCategoryIds = toObjectIdArray(video.categoryIds).map(String);
+                const categoryNames = videoCategoryIds
+                    .map((id) => categoryMap.get(id))
+                    .filter((name): name is string => Boolean(name));
+                const firstInfluencerId = toObjectIdArray(video.influencerIds)[0];
+                const influencer = firstInfluencerId
+                    ? influencerMap.get(String(firstInfluencerId)) || null
+                    : null;
+
+                return mapFinanceVideoToReel(video, categoryNames, influencer);
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'Reels fetched successfully',
+                data: {
+                    videos: mappedVideos,
+                    nextPage: hasMore ? currentPage + 1 : null,
+                    nextCursor: null,
+                    hasMore,
                 },
             });
         } catch (error: any) {

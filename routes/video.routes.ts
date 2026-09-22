@@ -6,6 +6,7 @@ const router = Router();
 
 router.get('/', apiKeyValidation, tokenValidation, VideoService.getVideos);
 router.get('/search', apiKeyValidation, tokenValidation, VideoService.searchVideos);
+router.get('/reels', apiKeyValidation, tokenValidation, VideoService.getReels);
 router.get('/:id', apiKeyValidation, tokenValidation, VideoService.getVideo);
 
 export default router;
