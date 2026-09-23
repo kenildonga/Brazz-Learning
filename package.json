@@ -9,6 +9,8 @@
     "start": "bun app.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "seed:finance": "bun scripts/seed-finance.ts"
   },
   "keywords": [],
@@ -30,6 +32,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.2.0",
     "@types/node-cache": "^4.2.5",
+    "prettier": "^3.9.9",
     "typescript": "^5.9.3"
   }
 }

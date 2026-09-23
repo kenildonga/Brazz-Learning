@@ -1,0 +1,8 @@
+dist
+node_modules
+bun.lock
+package-lock.json
+coverage
+.env
+.env.*
+!.env.example

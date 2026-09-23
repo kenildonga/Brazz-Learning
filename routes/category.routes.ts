@@ -9,23 +9,18 @@ const router = Router();
 router.get('/', apiKeyValidation, tokenValidation, CategoryService.getCategories);
 
 router.post(
-    '/save',
-    apiKeyValidation,
-    tokenValidation,
-    validate(
-        Joi.object({
-            categoryId: Joi.string().required(),
-            isSave: Joi.boolean().required(),
-        })
-    ),
-    CategoryService.saveCategories
+  '/save',
+  apiKeyValidation,
+  tokenValidation,
+  validate(
+    Joi.object({
+      categoryId: Joi.string().required(),
+      isSave: Joi.boolean().required(),
+    }),
+  ),
+  CategoryService.saveCategories,
 );
 
-router.get(
-    '/saved',
-    apiKeyValidation,
-    tokenValidation,
-    CategoryService.getSavedCategories
-);
+router.get('/saved', apiKeyValidation, tokenValidation, CategoryService.getSavedCategories);
 
 export default router;

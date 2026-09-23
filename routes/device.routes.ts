@@ -7,16 +7,16 @@ import { apiKeyValidation } from '../middleware/auth';
 const router = Router();
 
 router.post(
-    '/register',
-    apiKeyValidation,
-    validate(
-        Joi.object({
-            deviceUniqueId: Joi.string().required(),
-            appUniqueId: Joi.string().required(),
-            pushToken: Joi.string().allow(null, '').optional(),
-        })
-    ),
-    DeviceController.register
+  '/register',
+  apiKeyValidation,
+  validate(
+    Joi.object({
+      deviceUniqueId: Joi.string().required(),
+      appUniqueId: Joi.string().required(),
+      pushToken: Joi.string().allow(null, '').optional(),
+    }),
+  ),
+  DeviceController.register,
 );
 
 export default router;

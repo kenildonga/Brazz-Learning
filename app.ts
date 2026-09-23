@@ -26,10 +26,10 @@ app.use(`${prefix}/app/videos`, videoRoutes);
 // Base route
 // --- 404 last ---
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: "Route Not Found",
-    });
+  res.status(404).json({
+    success: false,
+    message: 'Route Not Found',
+  });
 });
 
 // Connect to Database
@@ -38,5 +38,5 @@ connectDB();
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
