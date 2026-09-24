@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/auth';
 import { getAppModels } from '../models/appModels';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
+import { publicThumbnailUrl } from '../utils/thumbnail';
 
 class PornstarService {
   getPornstars = async (req: AuthRequest, res: Response) => {
@@ -86,7 +87,10 @@ class PornstarService {
             name: pornstar.name,
             slug: pornstar.slug,
           },
-          videos,
+          videos: videos.map((video) => ({
+            ...video,
+            thumbnail: publicThumbnailUrl(video.thumbnail),
+          })),
         },
         pagination: {
           page,

@@ -5,6 +5,7 @@ import { getAppModels } from '../models/appModels';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
 import { fetchM3u8Url } from '../utils/m3u8';
+import { publicThumbnailUrl } from '../utils/thumbnail';
 import {
   fetchForYouReels,
   parseReelsLimit,
@@ -63,7 +64,7 @@ const mapFinanceVideoToReel = (
 ) => ({
   id: String(video._id),
   videoUrl: FINANCE_TEST_STREAM_URL,
-  thumbnailUrl: String(video.thumbnail || ''),
+  thumbnailUrl: publicThumbnailUrl(video.thumbnail),
   title: String(video.title || ''),
   description: String(video.description || ''),
   tags: categoryNames,
@@ -103,7 +104,10 @@ class VideoService {
       return res.status(200).json({
         success: true,
         message: 'Videos fetched successfully',
-        data,
+        data: data.map((video) => ({
+          ...video,
+          thumbnail: publicThumbnailUrl(video.thumbnail),
+        })),
         pagination: {
           page,
           limit: PAGE_LIMIT,
@@ -150,7 +154,10 @@ class VideoService {
       return res.status(200).json({
         success: true,
         message: 'Videos searched successfully',
-        data,
+        data: data.map((video) => ({
+          ...video,
+          thumbnail: publicThumbnailUrl(video.thumbnail),
+        })),
         pagination: {
           page,
           limit: PAGE_LIMIT,
@@ -333,12 +340,15 @@ class VideoService {
             duration: formatDuration(video.duration as number | null),
             description: video.description || '',
             movieId,
-            thumbnail: video.thumbnail || '',
+            thumbnail: publicThumbnailUrl(video.thumbnail),
             m3u8,
             categories,
             peopleIds,
           },
-          relatedVideos,
+          relatedVideos: relatedVideos.map((related) => ({
+            ...related,
+            thumbnail: publicThumbnailUrl(related.thumbnail),
+          })),
         },
       });
     } catch (error: any) {
