@@ -64,30 +64,30 @@ class VideoService {
           page,
           limit: PAGE_LIMIT,
           total,
-          adsConfig: {
-            setting: {
-              banner_show: 1,
-              native_show: 1,
-              interstitial_show: 1,
-              unity_game_id: '1234567890',
-            },
-            google_ads: {
-              google_ad_banner: 'id',
-              google_ad_native: 'id',
-              google_ad_interstitial: 'id',
-            },
-            facebook_ads: {
-              facebook_ad_banner: 'id',
-              facebook_ad_native: 'id',
-              facebook_ad_interstitial: 'id',
-            },
-            unity_ads: {
-              unity_ad_banner: 'id',
-              unity_ad_native: 'id',
-              unity_ad_interstitial: 'id',
-            },
-          },
           totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
+        },
+        adsConfig: {
+          setting: {
+            banner_show: 1,
+            native_show: 1,
+            interstitial_show: 1,
+            unity_game_id: '1234567890',
+          },
+          google_ads: {
+            google_ad_banner: 'id',
+            google_ad_native: 'id',
+            google_ad_interstitial: 'id',
+          },
+          facebook_ads: {
+            facebook_ad_banner: 'id',
+            facebook_ad_native: 'id',
+            facebook_ad_interstitial: 'id',
+          },
+          unity_ads: {
+            unity_ad_banner: 'id',
+            unity_ad_native: 'id',
+            unity_ad_interstitial: 'id',
+          },
         },
       });
     } catch (error: any) {
