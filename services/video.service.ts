@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/auth';
-import { getAppModels } from '../models/appModels';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
 import { fetchM3u8Url } from '../utils/m3u8';
@@ -12,10 +11,23 @@ import {
   parseReelsPage,
   sanitizeReelsFeed,
 } from '../utils/reels';
+import {
+  NAME_PROJECTION,
+  attachPeople,
+  escapeRegex,
+  getVideoModel,
+  mapFinanceVideoToReel,
+  parseSearchQuery,
+  toObjectIdArray,
+} from '../utils/video';
 
-const LIST_PROJECTION = { title: 1, thumbnail: 1, duration: 1 };
-const FINANCE_TEST_STREAM_URL =
-  'https://test-videos.co.uk/vids/bigbuckbunny/mp4/av1/1080/Big_Buck_Bunny_1080_10s_5MB.mp4';
+const LIST_PROJECTION = {
+  title: 1,
+  thumbnail: 1,
+  duration: 1,
+  pornstarIds: 1,
+  influencerIds: 1,
+};
 const REELS_PROJECTION = {
   title: 1,
   thumbnail: 1,
@@ -26,68 +38,11 @@ const REELS_PROJECTION = {
 };
 const RELATED_SIZE = 30;
 
-const NAME_PROJECTION = { name: 1 };
-
-const getVideoModel = (appStyle: 'finance' | 'adult') => {
-  const { Video, Category, Pornstar, personIdField } = getAppModels(appStyle);
-  return {
-    videoModel: Video as unknown as mongoose.Model<Record<string, unknown>>,
-    categoryModel: Category,
-    personModel: Pornstar,
-    personIdField,
-  };
-};
-
-const toObjectIdArray = (value: unknown) => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.filter((id) => mongoose.Types.ObjectId.isValid(String(id)));
-};
-
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const parseSearchQuery = (value: unknown) => {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (Array.isArray(value) && typeof value[0] === 'string') {
-    return value[0].trim();
-  }
-  return '';
-};
-
-const mapFinanceVideoToReel = (
-  video: Record<string, unknown>,
-  categoryNames: string[],
-  influencer: { slug?: string; name?: string } | null,
-) => ({
-  id: String(video._id),
-  videoUrl: FINANCE_TEST_STREAM_URL,
-  thumbnailUrl: publicThumbnailUrl(video.thumbnail),
-  title: String(video.title || ''),
-  description: String(video.description || ''),
-  tags: categoryNames,
-  duration: typeof video.duration === 'number' ? video.duration : 0,
-  width: null,
-  height: null,
-  userId: influencer ? String(influencer.slug || 'finance') : 'finance',
-  createdAt: video.createdAt,
-  updatedAt: video.updatedAt,
-  user: {
-    id: influencer ? String(influencer.slug || 'finance') : 'finance',
-    username: influencer?.slug || 'finance',
-    displayName: influencer?.name || 'Finance',
-    avatar: null,
-    verified: false,
-  },
-});
-
 class VideoService {
   getVideos = async (req: AuthRequest, res: Response) => {
     try {
       const appStyle = req.device?.appStyle || 'finance';
-      const { videoModel } = getVideoModel(appStyle);
+      const { videoModel, personModel, personIdField } = getVideoModel(appStyle);
       const page = parsePage(req.query.page);
       const skip = (page - 1) * PAGE_LIMIT;
 
@@ -104,14 +59,34 @@ class VideoService {
       return res.status(200).json({
         success: true,
         message: 'Videos fetched successfully',
-        data: data.map((video) => ({
-          ...video,
-          thumbnail: publicThumbnailUrl(video.thumbnail),
-        })),
+        data: await attachPeople(data, personModel, personIdField),
         pagination: {
           page,
           limit: PAGE_LIMIT,
           total,
+          adsConfig: {
+            setting: {
+              banner_show: 1,
+              native_show: 1,
+              interstitial_show: 1,
+              unity_game_id: '1234567890',
+            },
+            google_ads: {
+              google_ad_banner: 'id',
+              google_ad_native: 'id',
+              google_ad_interstitial: 'id',
+            },
+            facebook_ads: {
+              facebook_ad_banner: 'id',
+              facebook_ad_native: 'id',
+              facebook_ad_interstitial: 'id',
+            },
+            unity_ads: {
+              unity_ad_banner: 'id',
+              unity_ad_native: 'id',
+              unity_ad_interstitial: 'id',
+            },
+          },
           totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
         },
       });
@@ -134,7 +109,7 @@ class VideoService {
       }
 
       const appStyle = req.device?.appStyle || 'finance';
-      const { videoModel } = getVideoModel(appStyle);
+      const { videoModel, personModel, personIdField } = getVideoModel(appStyle);
       const page = parsePage(req.query.page);
       const skip = (page - 1) * PAGE_LIMIT;
       const filter = {
@@ -154,10 +129,7 @@ class VideoService {
       return res.status(200).json({
         success: true,
         message: 'Videos searched successfully',
-        data: data.map((video) => ({
-          ...video,
-          thumbnail: publicThumbnailUrl(video.thumbnail),
-        })),
+        data: await attachPeople(data, personModel, personIdField),
         pagination: {
           page,
           limit: PAGE_LIMIT,
@@ -345,10 +317,7 @@ class VideoService {
             categories,
             peopleIds,
           },
-          relatedVideos: relatedVideos.map((related) => ({
-            ...related,
-            thumbnail: publicThumbnailUrl(related.thumbnail),
-          })),
+          relatedVideos: await attachPeople(relatedVideos, personModel, personIdField),
         },
       });
     } catch (error: any) {
