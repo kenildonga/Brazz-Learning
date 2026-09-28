@@ -7,6 +7,13 @@ import { apiKeyValidation } from '../middleware/auth';
 const router = Router();
 
 router.post(
+  '/deep-link',
+  apiKeyValidation,
+  validate(Joi.object({})),
+  DeviceController.createDeepLink,
+);
+
+router.post(
   '/register',
   apiKeyValidation,
   validate(
@@ -14,6 +21,7 @@ router.post(
       deviceUniqueId: Joi.string().required(),
       appUniqueId: Joi.string().required(),
       pushToken: Joi.string().allow(null, '').optional(),
+      deepToken: Joi.string().allow(null, '').optional(),
     }),
   ),
   DeviceController.register,
