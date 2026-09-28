@@ -63,30 +63,25 @@ class DeviceService {
         joinVerified = true;
       }
 
-      // Default finance. Adult only after a verified join deep link on this request.
-      let appStyle: 'finance' | 'adult' = 'finance';
-      if (joinVerified) {
-        appStyle = 'adult';
-      } else if (device && device.appUniqueId === appUniqueId) {
-        appStyle = device.appStyle;
-      }
-
       if (!device) {
+        // New device record. Finance until a join token on this request verifies.
         device = await Device.create({
           deviceUniqueId,
           appUniqueId,
           pushToken: pushToken || null,
-          appStyle,
+          appStyle: joinVerified ? 'adult' : 'finance',
           selectedCategories: [],
         });
       } else if (device.appUniqueId !== appUniqueId) {
+        // Same device but different appUniqueId -> reset to finance unless this request verified a join token
         device.appUniqueId = appUniqueId;
         device.pushToken = pushToken || null;
-        device.appStyle = appStyle;
+        device.appStyle = joinVerified ? 'adult' : 'finance';
         await device.save();
       } else {
+        // Same device and same appUniqueId -> update pushToken and keep appStyle, unless a join token just verified
         device.pushToken = pushToken || null;
-        device.appStyle = appStyle;
+        if (joinVerified) device.appStyle = 'adult';
         await device.save();
       }
 
