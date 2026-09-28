@@ -9,6 +9,12 @@ const app: Application = express();
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use((req, _res, next) => {
+  console.log(`${req.method} ${req.originalUrl}`);
+  console.log('headers', req.headers);
+  console.log('body', req.body);
+  next();
+});
 
 // Routes
 import deviceRoutes from './routes/device.routes';
