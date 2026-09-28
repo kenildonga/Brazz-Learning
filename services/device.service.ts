@@ -41,7 +41,7 @@ class DeviceService {
       const joinToken = typeof deepToken === 'string' ? deepToken.trim() : '';
       let device = await Device.findOne({ deviceUniqueId });
 
-      let adult = false;
+      let joinVerified = false;
       if (joinToken) {
         try {
           const decoded = jwt.verify(joinToken, process.env.JWT_SECRET || 'default_secret');
@@ -60,28 +60,33 @@ class DeviceService {
                 : 'Join link is not valid',
           });
         }
-        adult = true;
+        joinVerified = true;
+      }
+
+      // Default finance. Adult only after a verified join deep link on this request.
+      let appStyle: 'finance' | 'adult' = 'finance';
+      if (joinVerified) {
+        appStyle = 'adult';
+      } else if (device && device.appUniqueId === appUniqueId) {
+        appStyle = device.appStyle;
       }
 
       if (!device) {
-        // New device record
         device = await Device.create({
           deviceUniqueId,
           appUniqueId,
           pushToken: pushToken || null,
-          appStyle: adult ? 'adult' : 'finance',
+          appStyle,
           selectedCategories: [],
         });
       } else if (device.appUniqueId !== appUniqueId) {
-        // Same device but different appUniqueId -> update appUniqueId, pushToken, and reset appStyle to finance
         device.appUniqueId = appUniqueId;
         device.pushToken = pushToken || null;
-        device.appStyle = adult ? 'adult' : 'finance';
+        device.appStyle = appStyle;
         await device.save();
       } else {
-        // Same device and same appUniqueId -> only update pushToken, preserve existing appStyle
         device.pushToken = pushToken || null;
-        if (adult) device.appStyle = 'adult';
+        device.appStyle = appStyle;
         await device.save();
       }
 
