@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import Device from '../models/Device';
 
 export interface AuthRequest extends Request {
   device?: {
@@ -23,7 +24,7 @@ export const apiKeyValidation = (req: Request, res: Response, next: NextFunction
   next();
 };
 
-export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const tokenValidation = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.header('token') || req.header('authorization')?.replace('Bearer ', '');
 
   if (!token) {
@@ -38,10 +39,26 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
       deviceUniqueId: string;
       appUniqueId: string;
       _id: string;
-      appStyle: 'finance' | 'adult';
+      appStyle?: 'finance' | 'adult';
     };
 
-    req.device = decoded;
+    const device = decoded._id
+      ? await Device.findById(decoded._id).select('deviceUniqueId appUniqueId appStyle').lean()
+      : null;
+
+    if (!device) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token is not valid or has expired',
+      });
+    }
+
+    req.device = {
+      deviceUniqueId: device.deviceUniqueId,
+      appUniqueId: device.appUniqueId,
+      _id: String(device._id),
+      appStyle: device.appStyle === 'adult' ? 'adult' : 'finance',
+    };
     next();
   } catch {
     return res.status(401).json({
