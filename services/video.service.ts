@@ -67,9 +67,9 @@ class VideoService {
           totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
         },
         adsConfig: {
-            banner_show: 1,
-            native_show: 1,
-            interstitial_show: 1,
+            banner_show: 3,
+            native_show: 3,
+            interstitial_show: 3,
             unity_game_id: '800385033',
             google_ad_banner: 'ca-app-pub-3940256099942544/6300978111',
             google_ad_native: 'ca-app-pub-3940256099942544/2247696110',
