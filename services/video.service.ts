@@ -67,27 +67,19 @@ class VideoService {
           totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
         },
         adsConfig: {
-          setting: {
             banner_show: 1,
             native_show: 1,
             interstitial_show: 1,
             unity_game_id: '800385033',
-          },
-          google_ads: {
             google_ad_banner: 'ca-app-pub-3940256099942544/6300978111',
             google_ad_native: 'ca-app-pub-3940256099942544/2247696110',
             google_ad_interstitial: 'ca-app-pub-3940256099942544/1033173712',
-          },
-          facebook_ads: {
             facebook_ad_banner: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
             facebook_ad_native: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
             facebook_ad_interstitial: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
-          },
-          unity_ads: {
             unity_ad_banner: 'Banner_Android',
             unity_ad_native: 'Native_Android',
-            unity_ad_interstitial: 'Interstitial_Android',
-          },
+            unity_ad_interstitial: 'Interstitial_Android'
         },
       });
     } catch (error: any) {
