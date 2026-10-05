@@ -77,9 +77,9 @@ class VideoService {
             facebook_ad_banner: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
             facebook_ad_native: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
             facebook_ad_interstitial: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
-            unity_ad_banner: 'Banner_Android',
-            unity_ad_native: 'Native_Android',
-            unity_ad_interstitial: 'Interstitial_Android'
+            unity_ad_banner: 'BP_Banner_Android',
+            unity_ad_native: 'BP_Banner_Android',
+            unity_ad_interstitial: 'BP_Interstitial_Android'
         },
       });
     } catch (error: any) {
