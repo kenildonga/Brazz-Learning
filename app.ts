@@ -21,9 +21,13 @@ import deviceRoutes from './routes/device.routes';
 import categoryRoutes from './routes/category.routes';
 import pornstarRoutes from './routes/pornstar.routes';
 import videoRoutes from './routes/video.routes';
+import legalRoutes from './routes/legal.routes';
+import contactRoutes from './routes/contact.routes';
 
 const prefix = '/api/v1';
 
+app.use(`${prefix}/legal`, legalRoutes);
+app.use(`${prefix}/contact`, contactRoutes);
 app.use(`${prefix}/device`, deviceRoutes);
 app.use(`${prefix}/app/categories`, categoryRoutes);
 app.use(`${prefix}/app/pornstars`, pornstarRoutes);
