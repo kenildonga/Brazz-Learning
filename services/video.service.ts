@@ -56,10 +56,16 @@ class VideoService {
         videoModel.countDocuments(),
       ]);
 
+      const shuffled = data.slice();
+      for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Videos fetched successfully',
-        data: await attachPeople(data, personModel, personIdField),
+        data: await attachPeople(shuffled, personModel, personIdField),
         pagination: {
           page,
           limit: PAGE_LIMIT,
