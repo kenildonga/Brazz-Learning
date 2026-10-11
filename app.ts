@@ -23,6 +23,7 @@ import pornstarRoutes from './routes/pornstar.routes';
 import videoRoutes from './routes/video.routes';
 import legalRoutes from './routes/legal.routes';
 import contactRoutes from './routes/contact.routes';
+import adminRoutes from './routes/admin.routes';
 
 const prefix = '/api/v1';
 
@@ -32,6 +33,7 @@ app.use(`${prefix}/device`, deviceRoutes);
 app.use(`${prefix}/app/categories`, categoryRoutes);
 app.use(`${prefix}/app/pornstars`, pornstarRoutes);
 app.use(`${prefix}/app/videos`, videoRoutes);
+app.use(`${prefix}/admin`, adminRoutes);
 
 // Base route
 // --- 404 last ---

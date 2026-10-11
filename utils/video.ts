@@ -3,8 +3,6 @@ import { getAppModels } from '../models/appModels';
 import { publicThumbnailUrl } from './thumbnail';
 
 export const NAME_PROJECTION = { name: 1 };
-const FINANCE_TEST_STREAM_URL =
-  'https://test-videos.co.uk/vids/bigbuckbunny/mp4/av1/1080/Big_Buck_Bunny_1080_10s_5MB.mp4';
 
 export const getVideoModel = (appStyle: 'finance' | 'adult') => {
   const { Video, Category, Pornstar, personIdField } = getAppModels(appStyle);
@@ -76,29 +74,3 @@ export const parseSearchQuery = (value: unknown) => {
   }
   return '';
 };
-
-export const mapFinanceVideoToReel = (
-  video: Record<string, unknown>,
-  categoryNames: string[],
-  influencer: { slug?: string; name?: string } | null,
-) => ({
-  id: String(video._id),
-  videoUrl: FINANCE_TEST_STREAM_URL,
-  thumbnailUrl: publicThumbnailUrl(video.thumbnail),
-  title: String(video.title || ''),
-  description: String(video.description || ''),
-  tags: categoryNames,
-  duration: typeof video.duration === 'number' ? video.duration : 0,
-  width: null,
-  height: null,
-  userId: influencer ? String(influencer.slug || 'finance') : 'finance',
-  createdAt: video.createdAt,
-  updatedAt: video.updatedAt,
-  user: {
-    id: influencer ? String(influencer.slug || 'finance') : 'finance',
-    username: influencer?.slug || 'finance',
-    displayName: influencer?.name || 'Finance',
-    avatar: null,
-    verified: false,
-  },
-});

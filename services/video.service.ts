@@ -11,12 +11,14 @@ import {
   parseReelsPage,
   sanitizeReelsFeed,
 } from '../utils/reels';
+import { getStoredAdSettings } from './admin/ads.service';
+import { buildAdsConfig } from '../utils/adsConfig';
+import AdminReelService from './admin/reel.service';
 import {
   NAME_PROJECTION,
   attachPeople,
   escapeRegex,
   getVideoModel,
-  mapFinanceVideoToReel,
   parseSearchQuery,
   toObjectIdArray,
 } from '../utils/video';
@@ -26,14 +28,6 @@ const LIST_PROJECTION = {
   thumbnail: 1,
   duration: 1,
   pornstarIds: 1,
-  influencerIds: 1,
-};
-const REELS_PROJECTION = {
-  title: 1,
-  thumbnail: 1,
-  duration: 1,
-  description: 1,
-  categoryIds: 1,
   influencerIds: 1,
 };
 const RELATED_SIZE = 30;
@@ -72,24 +66,7 @@ class VideoService {
           total,
           totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
         },
-        adsConfig: {
-            banner_show: 2,
-            native_show: 2,
-            interstitial_show: 2,
-            unity_game_id: '800385033',
-            nativeadsplace: 4,
-            blockerpopup: 1,
-            blockerpopup_html: `<div style=text-align:center;padding:16px;font-family:sans-serif;font-size:15px;line-height:1.6;color:#333><p><b>Connection Settings Required</b><p>Please disable <b>Ad Blocker</b>, <b>VPN</b>, or <b>Private DNS</b> to continue using the app.<div style=text-align:left;margin-top:12px><p><b>Follow these steps:</b><ol><li>Turn off any active <b>Ad Blocker</b> app.<li>Disconnect your <b>VPN</b> if it is enabled.<li>Open <b>Settings → Network & Internet → Private DNS</b> and select <b>Automatic</b> or <b>Off</b>, if available.<li>Close and reopen the app.</ol><p style=font-size:13px;color:#666>Menu names may vary depending on your device. If the issue persists, check your network settings and try again.</div></div>`,
-            google_ad_banner: 'ca-app-pub-3940256099942544/6300978111',
-            google_ad_native: 'ca-app-pub-3940256099942544/2247696110',
-            google_ad_interstitial: 'ca-app-pub-3940256099942544/1033173712',
-            facebook_ad_banner: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
-            facebook_ad_native: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
-            facebook_ad_interstitial: 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID',
-            unity_ad_banner: 'BP_Banner_Android',
-            unity_ad_native: 'BP_Banner_Android',
-            unity_ad_interstitial: 'BP_Interstitial_Android'
-        },
+        adsConfig: buildAdsConfig(await getStoredAdSettings()),
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -169,67 +146,11 @@ class VideoService {
         });
       }
 
-      const { videoModel, categoryModel, personModel } = getVideoModel('finance');
       const currentPage = page ?? 1;
-      const videos = await videoModel
-        .find({}, REELS_PROJECTION)
-        .sort({ createdAt: -1 })
-        .skip((currentPage - 1) * limit)
-        .limit(limit + 1)
-        .lean();
-      const hasMore = videos.length > limit;
-      if (hasMore) {
-        videos.pop();
-      }
-
-      const categoryIds = [
-        ...new Set(videos.flatMap((video) => toObjectIdArray(video.categoryIds).map(String))),
-      ];
-      const influencerIds = [
-        ...new Set(videos.flatMap((video) => toObjectIdArray(video.influencerIds).map(String))),
-      ];
-
-      const [categories, influencers] = await Promise.all([
-        categoryIds.length
-          ? categoryModel.find({ _id: { $in: categoryIds } }, { name: 1 }).lean()
-          : Promise.resolve([]),
-        influencerIds.length
-          ? personModel.find({ _id: { $in: influencerIds } }, { name: 1, slug: 1 }).lean()
-          : Promise.resolve([]),
-      ]);
-
-      const categoryMap = new Map(
-        categories.map((category) => [String(category._id), String(category.name || '')]),
-      );
-      const influencerMap = new Map(
-        influencers.map((influencer) => [
-          String(influencer._id),
-          { slug: String(influencer.slug || ''), name: String(influencer.name || '') },
-        ]),
-      );
-
-      const mappedVideos = videos.map((video) => {
-        const videoCategoryIds = toObjectIdArray(video.categoryIds).map(String);
-        const categoryNames = videoCategoryIds
-          .map((id) => categoryMap.get(id))
-          .filter((name): name is string => Boolean(name));
-        const firstInfluencerId = toObjectIdArray(video.influencerIds)[0];
-        const influencer = firstInfluencerId
-          ? influencerMap.get(String(firstInfluencerId)) || null
-          : null;
-
-        return mapFinanceVideoToReel(video, categoryNames, influencer);
-      });
-
       return res.status(200).json({
         success: true,
         message: 'Reels fetched successfully',
-        data: {
-          videos: mappedVideos,
-          nextPage: hasMore ? currentPage + 1 : null,
-          nextCursor: null,
-          hasMore,
-        },
+        data: await AdminReelService.listForApp(limit, currentPage),
       });
     } catch (error: any) {
       return res.status(500).json({

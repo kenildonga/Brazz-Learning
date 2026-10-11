@@ -11,7 +11,8 @@
     "test": "bun test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "seed:finance": "bun scripts/seed-finance.ts"
+    "seed:finance": "bun scripts/seed-finance.ts",
+    "seed:admin": "bun scripts/seed-admin.ts"
   },
   "keywords": [],
   "author": "",
