@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "seed:finance": "bun scripts/seed-finance.ts",
-    "seed:admin": "bun scripts/seed-admin.ts"
+    "seed:admin": "bun scripts/seed-admin.ts",
+    "seed:admin:reset": "bun scripts/seed-admin.ts --reset-password"
   },
   "keywords": [],
   "author": "",

@@ -14,7 +14,10 @@ async function seedAdmin() {
   const password = process.env.ADMIN_PASSWORD || 'admin123';
   const name = (process.env.ADMIN_NAME || 'Admin User').trim() || 'Admin User';
 
-  const existing = await Admin.findOne({ email });
+  const resetPassword =
+    process.argv.includes('--reset-password') || process.env.RESET_ADMIN_PASSWORD === '1';
+
+  const existing = await Admin.findOne({ email }).select('+passwordHash');
   if (!existing) {
     await Admin.create({
       name,
@@ -23,6 +26,11 @@ async function seedAdmin() {
       role: 'admin',
     });
     console.log(`Admin created: ${email}`);
+  } else if (resetPassword) {
+    existing.name = name;
+    existing.passwordHash = await hashPassword(password);
+    await existing.save();
+    console.log(`Admin password reset: ${email}`);
   } else {
     console.log(`Admin already exists: ${email}`);
   }
