@@ -8,6 +8,11 @@ import { PAGE_LIMIT, paginationMeta, parsePage } from '../../utils/pagination';
 import { fetchForYouReels, sanitizeReelsFeed } from '../../utils/reels';
 import { serializeReel } from '../../utils/serialize';
 import { escapeRegex, parseSearchQuery } from '../../utils/video';
+import {
+  createPlaybackTicket,
+  playbackTarget,
+  verifyPlaybackTicket,
+} from '../../utils/reelPlayback';
 
 function reelDoc(body: Record<string, unknown>) {
   const rawUser =
@@ -105,21 +110,44 @@ class AdminReelService {
     }
   };
 
+  playback = async (req: AuthRequest, res: Response) => {
+    let target: URL;
+    try {
+      target = playbackTarget(String(req.body.url));
+    } catch {
+      return sendError(res, 400, 'Video host is not allowed');
+    }
+    try {
+      res.setHeader('Cache-Control', 'no-store');
+      return sendOk(res, 'Playback authorized', {
+        url: target.href,
+        ticket: createPlaybackTicket(target),
+      });
+    } catch (error) {
+      return sendCaught(res, error);
+    }
+  };
+
   stream = async (req: AuthRequest, res: Response) => {
     const raw = typeof req.query.url === 'string' ? req.query.url : '';
     let target: URL;
     try {
-      target = new URL(raw);
+      target = playbackTarget(raw);
     } catch {
       return sendError(res, 400, 'Invalid video url');
     }
-    if (target.protocol !== 'https:' || target.host !== 'cdn.pornreels.tv') {
-      return sendError(res, 400, 'Video host is not allowed');
+    try {
+      verifyPlaybackTicket(typeof req.query.ticket === 'string' ? req.query.ticket : '', target);
+    } catch {
+      return sendError(res, 401, 'Playback ticket is not valid or has expired');
     }
 
     try {
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Referrer-Policy', 'no-referrer');
       const range = req.header('range');
       const upstream = await fetch(target, {
+        redirect: 'error',
         headers: {
           Accept: '*/*',
           'User-Agent':

@@ -145,20 +145,14 @@ router.put(
   AdminAdsService.update,
 );
 
-router.get(
-  '/reels/stream',
-  (req, _res, next) => {
-    if (!req.header('token') && typeof req.query.token === 'string') {
-      req.headers.token = req.query.token;
-    }
-    if (!req.header('api-key') && typeof req.query.apiKey === 'string') {
-      req.headers['api-key'] = req.query.apiKey;
-    }
-    next();
-  },
+router.post(
+  '/reels/playback',
   ...guard,
-  AdminReelService.stream,
+  validate(Joi.object({ url: Joi.string().required() })),
+  AdminReelService.playback,
 );
+// This endpoint accepts only URL-scoped, short-lived tickets, never admin credentials in a URL.
+router.get('/reels/stream', AdminReelService.stream);
 router.get('/reels', ...styled, AdminReelService.list);
 router.post('/reels', ...styled, validate(reelSchema), AdminReelService.create);
 router.put('/reels/:id', ...styled, validate(reelSchema), AdminReelService.update);
