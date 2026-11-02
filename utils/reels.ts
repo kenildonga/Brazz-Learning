@@ -23,7 +23,7 @@ const OMITTED_VIDEO_KEYS = [
   '_algorithmScore',
 ] as const;
 
-export const sanitizeReelVideo = (video: Record<string, unknown>) => {
+const sanitizeReelVideo = (video: Record<string, unknown>) => {
   const sanitized = { ...video };
   for (const key of OMITTED_VIDEO_KEYS) {
     delete sanitized[key];

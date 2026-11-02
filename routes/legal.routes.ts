@@ -8,9 +8,8 @@ type Style = 'finance' | 'adult';
 
 type PageConfig = {
   title: string;
-  description: Record<Style, string> | string;
-  files: Partial<Record<Style, string>> & { adult?: string; finance?: string };
-  styles: Style[];
+  description: Record<Style, string>;
+  files: Record<Style, string>;
   updated: string;
 };
 
@@ -25,7 +24,6 @@ const pages: Record<string, PageConfig> = {
       finance: 'terms-and-conditions.html',
       adult: 'terms-and-conditions-adult.html',
     },
-    styles: ['finance', 'adult'],
     updated: '2026-10-09',
   },
   privacy: {
@@ -38,16 +36,8 @@ const pages: Record<string, PageConfig> = {
       finance: 'privacy-policy.html',
       adult: 'privacy-policy-adult.html',
     },
-    styles: ['finance', 'adult'],
     updated: '2026-10-09',
   },
-};
-
-const resolveStyle = (page: PageConfig, requested: unknown): Style | null => {
-  const style = requested === 'adult' ? 'adult' : 'finance';
-  if (page.styles.includes(style)) return style;
-  if (page.styles.includes('adult')) return 'adult';
-  return page.styles[0] ?? null;
 };
 
 const getPage = (req: Request, res: Response) => {
@@ -57,19 +47,9 @@ const getPage = (req: Request, res: Response) => {
     return res.status(404).json({ success: false, message: 'Page not found' });
   }
 
-  const style = resolveStyle(page, req.query.style);
-  if (!style) {
-    return res.status(404).json({ success: false, message: 'Page not found' });
-  }
-
-  const file = page.files[style];
-  if (!file) {
-    return res.status(404).json({ success: false, message: 'Page not found' });
-  }
-
-  const html = readFileSync(path.join(dataDir, file), 'utf8');
-  const description =
-    typeof page.description === 'string' ? page.description : page.description[style];
+  const style: Style = req.query.style === 'adult' ? 'adult' : 'finance';
+  const html = readFileSync(path.join(dataDir, page.files[style]), 'utf8');
+  const description = page.description[style];
 
   if (req.query.format === 'html') {
     return res.type('html').send(html);

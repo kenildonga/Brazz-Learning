@@ -14,15 +14,11 @@ export function getAppModels(appStyle: AppStyle) {
         Video: FinanceVideo,
         Pornstar: FinanceInfluencer,
         personIdField: 'influencerIds' as const,
-        categoryCollection: 'finance_categories',
-        videoCollection: 'finance_videos',
       }
     : {
         Category: Category,
         Video: Video,
         Pornstar: Pornstar,
         personIdField: 'pornstarIds' as const,
-        categoryCollection: 'categories',
-        videoCollection: 'videos',
       };
 }

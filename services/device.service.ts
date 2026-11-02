@@ -85,13 +85,6 @@ class DeviceService {
         await device.save();
       }
 
-      if (!device) {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to create or update device',
-        });
-      }
-
       const token = jwt.sign(
         {
           deviceUniqueId: device.deviceUniqueId,
