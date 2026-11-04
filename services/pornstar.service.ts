@@ -2,8 +2,10 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/auth';
 import { getAppModels } from '../models/appModels';
+import { readIdParam } from '../utils/http';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { publicThumbnailUrl } from '../utils/thumbnail';
+import { playableFilter } from '../utils/video';
 
 class PornstarService {
   getPornstars = async (req: AuthRequest, res: Response) => {
@@ -43,9 +45,8 @@ class PornstarService {
 
   getPornstarVideos = async (req: AuthRequest, res: Response) => {
     try {
-      const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
-
-      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      const id = readIdParam(req);
+      if (!id) {
         return res.status(400).json({
           success: false,
           message: 'Invalid pornstar id',
@@ -66,7 +67,7 @@ class PornstarService {
 
       const page = parsePage(req.query.page);
       const skip = (page - 1) * PAGE_LIMIT;
-      const filter = { [personIdField]: pornstar._id };
+      const filter = { ...playableFilter(appStyle), [personIdField]: pornstar._id };
 
       const [videos, total] = await Promise.all([
         videoModel

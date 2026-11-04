@@ -3,6 +3,8 @@ import cors from 'cors';
 import connectDB from './config/db';
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
+import { signingSecret } from './utils/token';
+signingSecret();
 
 const app: Application = express();
 
@@ -35,9 +37,8 @@ app.use(`${prefix}/app/pornstars`, pornstarRoutes);
 app.use(`${prefix}/app/videos`, videoRoutes);
 app.use(`${prefix}/admin`, adminRoutes);
 
-// Base route
 // --- 404 last ---
-app.use((req, res) => {
+app.use((_req, res) => {
   res.status(404).json({
     success: false,
     message: 'Route Not Found',

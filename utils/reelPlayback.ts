@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import jwt from 'jsonwebtoken';
+import { signingSecret } from './token';
 
 const AUDIENCE = 'admin-reel-stream';
 
@@ -14,12 +15,6 @@ export function playbackTarget(raw: string): URL {
     throw new Error('Video host is not allowed');
   target.hash = '';
   return target;
-}
-
-function signingSecret() {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) throw new Error('JWT_SECRET is required for reel playback');
-  return secret;
 }
 
 function fingerprint(target: URL) {

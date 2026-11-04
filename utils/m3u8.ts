@@ -1,12 +1,11 @@
 import { createHash } from 'crypto';
 import NodeCache from 'node-cache';
+import { UPSTREAM_USER_AGENT } from './http';
 
 const BASE_URL = process.env.PORNHD3X_BASE_URL || 'https://www9.pornhd3x.tv';
 const POST_PREFIX = '/movies/';
 const REQUEST_TIMEOUT_MS = 15000;
 const CACHE_TTL_SECONDS = 2 * 60 * 60;
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 const urlCache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS, useClones: false });
 const inflight = new Map<string, Promise<string | null>>();
@@ -84,7 +83,7 @@ const loadPlayerConfig = async (html: string, pageUrl: string) => {
   const origin = `${new URL(BASE_URL).origin}/`;
   const fixJsUrl = fixJsTag.startsWith('http') ? fixJsTag : origin + fixJsTag.replace(/^\//, '');
   const fixJsSource = await fetchText(fixJsUrl, {
-    'User-Agent': USER_AGENT,
+    'User-Agent': UPSTREAM_USER_AGENT,
     Referer: pageUrl,
   });
 
@@ -109,7 +108,7 @@ const resolveM3u8Url = async (movieId: string, scrappedSlug: string): Promise<st
   try {
     const pageUrl = `${BASE_URL}${POST_PREFIX}${scrappedSlug}`;
     const html = await fetchText(pageUrl, {
-      'User-Agent': USER_AGENT,
+      'User-Agent': UPSTREAM_USER_AGENT,
       Referer: BASE_URL,
     });
 
@@ -124,7 +123,7 @@ const resolveM3u8Url = async (movieId: string, scrappedSlug: string): Promise<st
 
     const response = await fetch(sourcesUrl, {
       headers: {
-        'User-Agent': USER_AGENT,
+        'User-Agent': UPSTREAM_USER_AGENT,
         Referer: pageUrl,
         'X-Requested-With': 'XMLHttpRequest',
         Cookie: `${cookieName}=${random}`,

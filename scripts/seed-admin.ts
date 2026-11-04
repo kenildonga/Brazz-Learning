@@ -8,10 +8,12 @@ import { hashPassword } from '../utils/password';
 dotenv.config({ quiet: true });
 
 async function seedAdmin() {
-  await connectDB();
-
   const email = (process.env.ADMIN_EMAIL || 'admin@brazz.com').trim().toLowerCase();
-  const password = process.env.ADMIN_PASSWORD || 'admin123';
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password || password.length < 12) {
+    throw new Error('Set ADMIN_PASSWORD to a unique password of at least 12 characters');
+  }
+  await connectDB();
   const name = (process.env.ADMIN_NAME || 'Admin User').trim() || 'Admin User';
 
   const resetPassword =
@@ -27,9 +29,10 @@ async function seedAdmin() {
     });
     console.log(`Admin created: ${email}`);
   } else if (resetPassword) {
-    existing.name = name;
-    existing.passwordHash = await hashPassword(password);
-    await existing.save();
+    await Admin.updateOne(
+      { _id: existing._id },
+      { $set: { name, passwordHash: await hashPassword(password) }, $inc: { sessionVersion: 1 } },
+    );
     console.log(`Admin password reset: ${email}`);
   } else {
     console.log(`Admin already exists: ${email}`);

@@ -27,15 +27,19 @@ const videoSchema = Joi.object({
   slug: Joi.string().trim().min(1).required(),
   scrappedSlug: Joi.string().trim().min(1).required(),
   movieId: Joi.string().trim().min(1).required(),
+  playbackUrl: Joi.string()
+    .trim()
+    .uri({ scheme: ['https'] })
+    .allow(''),
   title: Joi.string().trim().min(1).required(),
   duration: Joi.number().min(0).allow(null),
   thumbnail: Joi.string().trim().allow(''),
   description: Joi.string().allow(''),
   metaTitle: Joi.string().allow(''),
   metaDescription: Joi.string().allow(''),
-  categoryIds: Joi.array().items(Joi.string().trim()).default([]),
-  influencerIds: Joi.array().items(Joi.string().trim()),
-  pornstarIds: Joi.array().items(Joi.string().trim()),
+  categoryIds: Joi.array().max(100).items(Joi.string().trim()).default([]),
+  influencerIds: Joi.array().max(100).items(Joi.string().trim()),
+  pornstarIds: Joi.array().max(100).items(Joi.string().trim()),
 });
 
 const reelUserSchema = Joi.object({
@@ -110,6 +114,7 @@ router.post('/people', ...styled, validate(namedSchema), AdminContentService.cre
 router.put('/people/:id', ...styled, validate(namedSchema), AdminContentService.updatePerson);
 router.delete('/people/:id', ...styled, AdminContentService.deletePerson);
 
+router.get('/video-options/:kind', ...styled, AdminContentService.listOptions);
 router.get('/videos', ...styled, AdminContentService.listVideos);
 router.post('/videos', ...styled, validate(videoSchema), AdminContentService.createVideo);
 router.get('/videos/:id', ...styled, AdminContentService.getVideo);

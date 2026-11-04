@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/auth';
+import { readIdParam } from '../utils/http';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
 import { fetchM3u8Url } from '../utils/m3u8';
@@ -20,6 +20,7 @@ import {
   escapeRegex,
   getVideoModel,
   parseSearchQuery,
+  playableFilter,
   toObjectIdArray,
 } from '../utils/video';
 
@@ -39,15 +40,16 @@ class VideoService {
       const { videoModel, personModel, personIdField } = getVideoModel(appStyle);
       const page = parsePage(req.query.page);
       const skip = (page - 1) * PAGE_LIMIT;
+      const filter = playableFilter(appStyle);
 
       const [data, total] = await Promise.all([
         videoModel
-          .find({}, LIST_PROJECTION)
+          .find(filter, LIST_PROJECTION)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(PAGE_LIMIT)
           .lean(),
-        videoModel.countDocuments(),
+        videoModel.countDocuments(filter),
       ]);
 
       const shuffled = data.slice();
@@ -91,6 +93,7 @@ class VideoService {
       const page = parsePage(req.query.page);
       const skip = (page - 1) * PAGE_LIMIT;
       const filter = {
+        ...playableFilter(appStyle),
         title: { $regex: escapeRegex(q), $options: 'i' },
       };
 
@@ -162,9 +165,8 @@ class VideoService {
 
   getVideo = async (req: AuthRequest, res: Response) => {
     try {
-      const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0];
-
-      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      const id = readIdParam(req);
+      if (!id) {
         return res.status(400).json({
           success: false,
           message: 'Invalid video id',
@@ -182,10 +184,21 @@ class VideoService {
         });
       }
 
+      if (
+        appStyle === 'finance' &&
+        (typeof video.playbackUrl !== 'string' || !video.playbackUrl.startsWith('https://'))
+      ) {
+        return res
+          .status(409)
+          .json({ success: false, message: 'This lesson has no playback source yet' });
+      }
       const categoryIds = toObjectIdArray(video.categoryIds);
       const personIds = toObjectIdArray(video[personIdField]);
 
-      const match: Record<string, unknown> = { _id: { $ne: video._id } };
+      const match: Record<string, unknown> = {
+        ...playableFilter(appStyle),
+        _id: { $ne: video._id },
+      };
       if (categoryIds.length || personIds.length) {
         const or: Record<string, unknown>[] = [];
         if (categoryIds.length) {
@@ -208,7 +221,7 @@ class VideoService {
       const m3u8Promise =
         appStyle === 'adult' && movieId && scrappedSlug
           ? fetchM3u8Url(movieId, scrappedSlug)
-          : Promise.resolve('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
+          : Promise.resolve(appStyle === 'finance' ? (video.playbackUrl as string) : null);
 
       const categoriesPromise = categoryIds.length
         ? categoryModel.find({ _id: { $in: categoryIds } }, NAME_PROJECTION).lean()

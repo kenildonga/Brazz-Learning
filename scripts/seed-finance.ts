@@ -235,6 +235,7 @@ const seed = async () => {
     influencerIds.set(influencer.slug, doc._id);
   }
 
+  // Sample metadata only; supply real playback URLs in the admin before use.
   for (const video of VIDEOS) {
     await upsertBySlug(
       FinanceVideo,

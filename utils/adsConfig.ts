@@ -74,42 +74,44 @@ function envInt(name: string, fallback: number) {
 }
 
 export function buildAdsConfig(settings: AdSettings) {
-  const google = settings.adCodeType === 1;
-  const unity = settings.adCodeType === 2;
-  const meta = settings.adCodeType === 3;
+  const formats =
+    settings.adCodeType === 1
+      ? settings.googleAds
+      : settings.adCodeType === 2
+        ? settings.unityAds
+        : settings.metaAds;
+  const on = settings.enabled;
 
   return {
-    banner_show: envString('ADS_BANNER_SHOW', '2'),
-    native_show: envString('ADS_NATIVE_SHOW', '2'),
-    interstitial_show: envString('ADS_INTERSTITIAL_SHOW', '2'),
-    rewards_show: envString('ADS_REWARDS_SHOW', '2'),
+    banner_show: on && formats.banner ? envString('ADS_BANNER_SHOW', '2') : '0',
+    native_show: on && formats.native ? envString('ADS_NATIVE_SHOW', '2') : '0',
+    interstitial_show: on && formats.interstitial ? envString('ADS_INTERSTITIAL_SHOW', '2') : '0',
+    rewards_show: on && formats.rewards ? envString('ADS_REWARDS_SHOW', '2') : '0',
     ad_code_type: settings.adCodeType,
-    unity_game_id: unity ? envString('ADS_UNITY_GAME_ID', '800385033') : '',
+    unity_game_id: on ? envString('ADS_UNITY_GAME_ID', '800385033') : '',
     nativeadsplace: envInt('ADS_NATIVE_PLACE', 4),
-    blockerpopup: envInt('ADS_BLOCKER_POPUP', 1),
+    blockerpopup: on ? envInt('ADS_BLOCKER_POPUP', 1) : 0,
     blockerpopup_html: envString('ADS_BLOCKER_HTML', BLOCKER_HTML),
-    google_ad_banner: google
+    google_ad_banner: on
       ? envString('ADS_GOOGLE_BANNER', 'ca-app-pub-3940256099942544/6300978111')
       : '',
-    google_ad_native: google
+    google_ad_native: on
       ? envString('ADS_GOOGLE_NATIVE', 'ca-app-pub-3940256099942544/2247696110')
       : '',
-    google_ad_interstitial: google
+    google_ad_interstitial: on
       ? envString('ADS_GOOGLE_INTERSTITIAL', 'ca-app-pub-3940256099942544/1033173712')
       : '',
-    facebook_ad_banner: meta
+    facebook_ad_banner: on
       ? envString('ADS_META_BANNER', 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID')
       : '',
-    facebook_ad_native: meta
+    facebook_ad_native: on
       ? envString('ADS_META_NATIVE', 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID')
       : '',
-    facebook_ad_interstitial: meta
+    facebook_ad_interstitial: on
       ? envString('ADS_META_INTERSTITIAL', 'IMG_16_9_APP_INSTALL#YOUR_PLACEMENT_ID')
       : '',
-    unity_ad_banner: unity ? envString('ADS_UNITY_BANNER', 'BP_Banner_Android') : '',
-    unity_ad_native: unity ? envString('ADS_UNITY_NATIVE', 'BP_Banner_Android') : '',
-    unity_ad_interstitial: unity
-      ? envString('ADS_UNITY_INTERSTITIAL', 'BP_Interstitial_Android')
-      : '',
+    unity_ad_banner: on ? envString('ADS_UNITY_BANNER', 'BP_Banner_Android') : '',
+    unity_ad_native: on ? envString('ADS_UNITY_NATIVE', 'BP_Banner_Android') : '',
+    unity_ad_interstitial: on ? envString('ADS_UNITY_INTERSTITIAL', 'BP_Interstitial_Android') : '',
   };
 }

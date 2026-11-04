@@ -3,36 +3,22 @@ import { AuthRequest } from '../middleware/auth';
 import Device from '../models/Device';
 import { getAppModels } from '../models/appModels';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
+import { countVideosByCategory, getVideoModel } from '../utils/video';
 
 class CategoryService {
   getCategories = async (req: AuthRequest, res: Response) => {
     try {
       const appStyle = req.device?.appStyle || 'finance';
-      const { Category, Video } = getAppModels(appStyle);
+      const { categoryModel, videoModel } = getVideoModel(appStyle);
       const pageQuery = req.query.page;
       const hasPage = pageQuery !== undefined && pageQuery !== '';
       const page = parsePage(pageQuery);
 
-      const categories = await Category.find({}, { name: 1 }).lean();
-      const categoryIds = categories.map((category) => category._id);
-
-      const countMap = new Map<string, number>();
-      if (categoryIds.length) {
-        try {
-          const counts = await Video.aggregate([
-            { $match: { categoryIds: { $in: categoryIds } } },
-            { $unwind: '$categoryIds' },
-            { $match: { categoryIds: { $in: categoryIds } } },
-            { $group: { _id: '$categoryIds', count: { $sum: 1 } } },
-          ]).option({ maxTimeMS: 10000 });
-
-          for (const row of counts) {
-            countMap.set(String(row._id), row.count);
-          }
-        } catch {
-          // Counts are optional; still return categories so the client is not left hanging.
-        }
-      }
+      const categories = await categoryModel.find({}, { name: 1 }).lean();
+      const countMap = await countVideosByCategory(
+        videoModel,
+        categories.map((category) => category._id),
+      );
 
       const sorted = categories
         .map((category) => ({
@@ -74,36 +60,37 @@ class CategoryService {
 
   saveCategories = async (req: AuthRequest, res: Response) => {
     try {
-      const { categoryId, isSave } = req.body as {
+      const { categoryId: rawCategoryId, isSave } = req.body as {
         categoryId: string;
         isSave: boolean;
       };
 
-      const deviceId = req.device?._id;
-      const deviceUniqueId = req.device?.deviceUniqueId;
-
-      const device = await Device.findOne({
-        ...(deviceId ? { _id: deviceId } : { deviceUniqueId }),
-      });
-
-      if (!device) {
-        return res.status(404).json({
-          success: false,
-          message: 'Device not found',
-        });
+      // Only canonical 24-hex IDs; isValid also accepts any 12-character string.
+      if (!/^[a-f\d]{24}$/i.test(rawCategoryId)) {
+        return res.status(400).json({ success: false, message: 'Invalid category id' });
       }
-
-      const currentCategories = device.selectedCategories || [];
-
-      if (isSave) {
-        if (!currentCategories.includes(categoryId)) {
-          device.selectedCategories = [...currentCategories, categoryId];
-        }
-      } else {
-        device.selectedCategories = currentCategories.filter((id) => id !== categoryId);
+      const categoryId = rawCategoryId.toLowerCase();
+      const { Category } = getAppModels(req.device!.appStyle);
+      if (isSave && !(await Category.exists({ _id: categoryId }))) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Category not found in this catalog' });
       }
-
-      await device.save();
+      const device = await Device.findOneAndUpdate(
+        {
+          _id: req.device!._id,
+          appUniqueId: req.device!.appUniqueId,
+          appStyle: req.device!.appStyle,
+        },
+        isSave
+          ? { $addToSet: { selectedCategories: categoryId } }
+          : { $pull: { selectedCategories: categoryId } },
+        { new: true, runValidators: true },
+      );
+      if (!device)
+        return res
+          .status(401)
+          .json({ success: false, message: 'Device session changed; register again' });
 
       return res.status(200).json({
         success: true,

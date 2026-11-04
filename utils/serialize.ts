@@ -61,6 +61,7 @@ export function serializeVideo(doc: object, personIdField: 'influencerIds' | 'po
     slug: String(value.slug || ''),
     scrappedSlug: String(value.scrappedSlug || ''),
     movieId: String(value.movieId || ''),
+    ...(personIdField === 'influencerIds' ? { playbackUrl: String(value.playbackUrl || '') } : {}),
     title: String(value.title || ''),
     duration: toNumberOrNull(value.duration),
     thumbnail: publicThumbnailUrl(value.thumbnail),

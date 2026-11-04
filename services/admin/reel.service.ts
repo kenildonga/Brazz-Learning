@@ -1,9 +1,9 @@
 import { Response } from 'express';
 import { Readable } from 'node:stream';
-import mongoose from 'mongoose';
+import { pipeline } from 'node:stream/promises';
 import { AuthRequest } from '../../middleware/auth';
 import FinanceReel, { type IReelUser } from '../../models/FinanceReel';
-import { sendCaught, sendError, sendOk } from '../../utils/http';
+import { readIdParam, sendCaught, sendError, sendOk, UPSTREAM_USER_AGENT } from '../../utils/http';
 import { PAGE_LIMIT, paginationMeta, parsePage } from '../../utils/pagination';
 import { fetchForYouReels, sanitizeReelsFeed } from '../../utils/reels';
 import { serializeReel } from '../../utils/serialize';
@@ -142,30 +142,46 @@ class AdminReelService {
       return sendError(res, 401, 'Playback ticket is not valid or has expired');
     }
 
+    const controller = new AbortController();
+    const disconnect = () => controller.abort();
+    res.once('close', disconnect);
+    const timeout = setTimeout(disconnect, 120_000);
     try {
       res.setHeader('Cache-Control', 'private, no-store');
       res.setHeader('Referrer-Policy', 'no-referrer');
       const range = req.header('range');
       const upstream = await fetch(target, {
         redirect: 'error',
+        signal: controller.signal,
         headers: {
           Accept: '*/*',
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': UPSTREAM_USER_AGENT,
           ...(range ? { Range: range } : {}),
         },
       });
+      // The timeout bounds the upstream response wait; body transfer lasts as long as the viewer stays connected.
+      clearTimeout(timeout);
       res.status(upstream.status);
       for (const name of ['content-type', 'content-length', 'content-range', 'accept-ranges']) {
         const value = upstream.headers.get(name);
         if (value) res.setHeader(name, value);
       }
       if (!upstream.body) return res.end();
-      Readable.fromWeb(upstream.body as unknown as import('node:stream/web').ReadableStream).pipe(
+      await pipeline(
+        Readable.fromWeb(upstream.body as unknown as import('node:stream/web').ReadableStream),
         res,
       );
     } catch (error) {
+      if (res.destroyed) return;
+      if (res.headersSent) {
+        res.destroy();
+        return;
+      }
       return sendCaught(res, error);
+    } finally {
+      clearTimeout(timeout);
+      res.off('close', disconnect);
+      controller.abort();
     }
   };
 
@@ -186,10 +202,8 @@ class AdminReelService {
       if (req.appStyle !== 'finance') {
         return sendError(res, 400, 'Reels can only be edited in finance mode');
       }
-      const rawId = req.params.id;
-      const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
-      if (!id || !mongoose.Types.ObjectId.isValid(id))
-        return sendError(res, 400, 'Invalid reel id');
+      const id = readIdParam(req);
+      if (!id) return sendError(res, 400, 'Invalid reel id');
       const updated = await FinanceReel.findByIdAndUpdate(id, reelDoc(req.body), {
         new: true,
         runValidators: true,

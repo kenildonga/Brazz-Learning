@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { signingSecret } from '../../utils/token';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../../middleware/auth';
 import Admin from '../../models/Admin';
@@ -21,8 +22,13 @@ class AdminAuthService {
 
       return sendOk(res, 'Logged in successfully', {
         token: jwt.sign(
-          { sub: String(admin._id), email: admin.email, role: 'admin', type: 'admin' },
-          process.env.JWT_SECRET || 'default_secret',
+          {
+            sub: String(admin._id),
+            role: 'admin',
+            type: 'admin',
+            sessionVersion: admin.sessionVersion ?? 0,
+          },
+          signingSecret(),
           { expiresIn: '7d' },
         ),
         user: serializeAdmin(admin.toObject()),
@@ -78,8 +84,10 @@ class AdminAuthService {
       if (!(await verifyPassword(currentPassword, admin.passwordHash))) {
         return sendError(res, 400, 'Current password is incorrect');
       }
-      admin.passwordHash = await hashPassword(newPassword);
-      await admin.save();
+      await Admin.updateOne(
+        { _id: admin._id },
+        { $set: { passwordHash: await hashPassword(newPassword) }, $inc: { sessionVersion: 1 } },
+      );
       return sendOk(res, 'Password updated successfully', null);
     } catch (error) {
       return sendCaught(res, error);

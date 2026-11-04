@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import Admin from '../models/Admin';
+import { signingSecret } from '../utils/token';
 
 export type AppStyle = 'finance' | 'adult';
 
@@ -52,18 +55,28 @@ export const apiKeyValidation = (req: Request, res: Response, next: NextFunction
   next();
 };
 
-export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.header('token') || req.header('authorization')?.replace('Bearer ', '');
+/** Session token from the `token` header or `Authorization: Bearer …`. */
+const readToken = (req: Request) =>
+  req.header('token') || req.header('authorization')?.replace('Bearer ', '');
 
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'No token provided, authorization denied',
-    });
-  }
+const sendNoToken = (res: Response) =>
+  res.status(401).json({ success: false, message: 'No token provided, authorization denied' });
+
+const sendInvalidToken = (res: Response) =>
+  res.status(401).json({ success: false, message: 'Token is not valid or has expired' });
+
+// A JWT failure means the session is invalid; anything else (such as the database) is temporary.
+const sendVerifyFailure = (res: Response, error: unknown) =>
+  error instanceof jwt.JsonWebTokenError
+    ? sendInvalidToken(res)
+    : res.status(503).json({ success: false, message: 'Could not verify session. Please retry.' });
+
+export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = readToken(req);
+  if (!token) return sendNoToken(res);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as {
+    const decoded = jwt.verify(token, signingSecret()) as {
       deviceUniqueId?: string;
       appUniqueId?: string;
       _id?: string;
@@ -77,10 +90,7 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
       !decoded.appUniqueId ||
       !decoded._id
     ) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token is not valid or has expired',
-      });
+      return sendInvalidToken(res);
     }
 
     req.device = {
@@ -91,48 +101,44 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
     };
     next();
   } catch {
-    return res.status(401).json({
-      success: false,
-      message: 'Token is not valid or has expired',
-    });
+    return sendInvalidToken(res);
   }
 };
 
-export const adminTokenValidation = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.header('token') || req.header('authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'No token provided, authorization denied',
-    });
-  }
+export const adminTokenValidation = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = readToken(req);
+  if (!token) return sendNoToken(res);
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as {
+    const decoded = jwt.verify(token, signingSecret(), { algorithms: ['HS256'] }) as {
       sub?: string;
+      sessionVersion?: number;
       email?: string;
       role?: string;
       type?: string;
     };
 
-    if (decoded.type !== 'admin' || decoded.role !== 'admin' || !decoded.sub) {
-      return res.status(401).json({
-        success: false,
-        message: 'Token is not valid or has expired',
-      });
+    if (
+      decoded.type !== 'admin' ||
+      decoded.role !== 'admin' ||
+      !decoded.sub ||
+      !mongoose.Types.ObjectId.isValid(decoded.sub) ||
+      !Number.isInteger(decoded.sessionVersion)
+    ) {
+      return sendInvalidToken(res);
     }
 
-    req.admin = {
-      id: decoded.sub,
-      email: decoded.email || '',
-      role: 'admin',
-    };
+    const admin = await Admin.findById(decoded.sub).lean();
+    if (
+      !admin ||
+      admin.role !== 'admin' ||
+      (admin.sessionVersion ?? 0) !== decoded.sessionVersion
+    ) {
+      return res.status(401).json({ success: false, message: 'Admin session is no longer valid' });
+    }
+    req.admin = { id: String(admin._id), email: admin.email, role: 'admin' };
     next();
-  } catch {
-    return res.status(401).json({
-      success: false,
-      message: 'Token is not valid or has expired',
-    });
+  } catch (error) {
+    return sendVerifyFailure(res, error);
   }
 };

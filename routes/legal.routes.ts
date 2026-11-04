@@ -1,8 +1,9 @@
-import { readFileSync } from 'fs';
-import path from 'path';
 import { Router, Request, Response } from 'express';
 
-const dataDir = path.join(__dirname, '..', 'data');
+import financeTerms from '../data/terms-and-conditions.html' with { type: 'text' };
+import adultTerms from '../data/terms-and-conditions-adult.html' with { type: 'text' };
+import financePrivacy from '../data/privacy-policy.html' with { type: 'text' };
+import adultPrivacy from '../data/privacy-policy-adult.html' with { type: 'text' };
 
 type Style = 'finance' | 'adult';
 
@@ -21,8 +22,8 @@ const pages: Record<string, PageConfig> = {
       adult: 'Rules for using Brazz and the Brazz Learning app.',
     },
     files: {
-      finance: 'terms-and-conditions.html',
-      adult: 'terms-and-conditions-adult.html',
+      finance: financeTerms,
+      adult: adultTerms,
     },
     updated: '2026-10-09',
   },
@@ -33,8 +34,8 @@ const pages: Record<string, PageConfig> = {
       adult: 'How Brazz Learning handles device data, notifications, and ads.',
     },
     files: {
-      finance: 'privacy-policy.html',
-      adult: 'privacy-policy-adult.html',
+      finance: financePrivacy,
+      adult: adultPrivacy,
     },
     updated: '2026-10-09',
   },
@@ -42,13 +43,13 @@ const pages: Record<string, PageConfig> = {
 
 const getPage = (req: Request, res: Response) => {
   const slug = String(req.params.slug || '');
-  const page = pages[slug];
+  const page = Object.hasOwn(pages, slug) ? pages[slug] : undefined;
   if (!page) {
     return res.status(404).json({ success: false, message: 'Page not found' });
   }
 
   const style: Style = req.query.style === 'adult' ? 'adult' : 'finance';
-  const html = readFileSync(path.join(dataDir, page.files[style]), 'utf8');
+  const html = page.files[style];
   const description = page.description[style];
 
   if (req.query.format === 'html') {

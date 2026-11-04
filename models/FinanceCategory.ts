@@ -4,6 +4,8 @@ export interface IFinanceCategory extends Document {
   _id: Types.ObjectId;
   slug: string;
   name: string;
+  referenceLeaseUntil?: Date;
+  deleteLeaseUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -11,7 +13,9 @@ export interface IFinanceCategory extends Document {
 const FinanceCategorySchema = new Schema<IFinanceCategory>(
   {
     slug: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
+    referenceLeaseUntil: { type: Date, select: false },
+    deleteLeaseUntil: { type: Date, select: false },
+    name: { type: String, required: true, index: true },
   },
   { timestamps: true, versionKey: false, collection: 'finance_categories' },
 );

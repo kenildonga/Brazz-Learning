@@ -8,14 +8,13 @@ const ADS_KEY = 'ads';
 
 export async function getStoredAdSettings(): Promise<AdSettings> {
   const existing = await AppSettings.findOne({ key: ADS_KEY }).lean();
-  if (existing?.value) {
-    return normalizeAdSettings(existing.value);
-  }
-  const created = await AppSettings.create({
-    key: ADS_KEY,
-    value: { ...defaultAdSettings(), updatedAt: new Date().toISOString() },
-  });
-  return normalizeAdSettings(created.value);
+  if (existing?.value) return normalizeAdSettings(existing.value);
+  const saved = await AppSettings.findOneAndUpdate(
+    { key: ADS_KEY },
+    { $setOnInsert: { value: { ...defaultAdSettings(), updatedAt: new Date().toISOString() } } },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  ).lean();
+  return normalizeAdSettings(saved?.value);
 }
 
 class AdminAdsService {

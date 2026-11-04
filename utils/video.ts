@@ -14,6 +14,10 @@ export const getVideoModel = (appStyle: 'finance' | 'adult') => {
   };
 };
 
+// Finance lessons without their own HTTPS media stay out of public lists until an admin adds one.
+export const playableFilter = (appStyle: 'finance' | 'adult') =>
+  appStyle === 'finance' ? { playbackUrl: { $regex: '^https://' } } : {};
+
 export const toObjectIdArray = (value: unknown) => {
   if (!Array.isArray(value)) {
     return [];
@@ -22,6 +26,31 @@ export const toObjectIdArray = (value: unknown) => {
 };
 
 export const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Video count per category id. Counts are optional, so a failed or slow aggregation yields none. */
+export const countVideosByCategory = async (
+  videoModel: mongoose.Model<Record<string, unknown>>,
+  categoryIds: mongoose.Types.ObjectId[],
+) => {
+  const counts = new Map<string, number>();
+  if (!categoryIds.length) return counts;
+  try {
+    const rows = await videoModel
+      .aggregate([
+        { $match: { categoryIds: { $in: categoryIds } } },
+        { $unwind: '$categoryIds' },
+        { $match: { categoryIds: { $in: categoryIds } } },
+        { $group: { _id: '$categoryIds', count: { $sum: 1 } } },
+      ])
+      .option({ maxTimeMS: 10000 });
+    for (const row of rows) {
+      counts.set(String(row._id), row.count as number);
+    }
+  } catch {
+    // Callers still return the categories without counts.
+  }
+  return counts;
+};
 
 const toPeople = (names: string[]) => {
   if (names.length === 0) {

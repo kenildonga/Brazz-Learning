@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Device from '../models/Device';
+import { signingSecret } from '../utils/token';
 
 class DeviceService {
   createDeepLink = async (_req: Request, res: Response) => {
     try {
-      const token = jwt.sign({ purpose: 'join' }, process.env.JWT_SECRET || 'default_secret', {
+      const token = jwt.sign({ purpose: 'join' }, signingSecret(), {
         expiresIn: '10m',
       });
       const origin = (process.env.DEEP_LINK_ORIGIN || 'https://brazz-learning.online').replace(
@@ -44,7 +45,7 @@ class DeviceService {
       let joinVerified = false;
       if (joinToken) {
         try {
-          const decoded = jwt.verify(joinToken, process.env.JWT_SECRET || 'default_secret');
+          const decoded = jwt.verify(joinToken, signingSecret());
           if (typeof decoded !== 'object' || decoded === null || decoded.purpose !== 'join') {
             return res.status(200).json({
               success: false,
@@ -92,7 +93,7 @@ class DeviceService {
           _id: device._id,
           appStyle: device.appStyle,
         },
-        process.env.JWT_SECRET || 'default_secret',
+        signingSecret(),
         { expiresIn: '3h' },
       );
 
