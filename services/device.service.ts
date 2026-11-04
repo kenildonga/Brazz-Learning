@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Device from '../models/Device';
+import { sendCaught } from '../utils/http';
 import { signingSecret } from '../utils/token';
 
 class DeviceService {
@@ -22,11 +23,8 @@ class DeviceService {
           url: `${origin}/join/${token}`,
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -45,7 +43,7 @@ class DeviceService {
       let joinVerified = false;
       if (joinToken) {
         try {
-          const decoded = jwt.verify(joinToken, signingSecret());
+          const decoded = jwt.verify(joinToken, signingSecret(), { algorithms: ['HS256'] });
           if (typeof decoded !== 'object' || decoded === null || decoded.purpose !== 'join') {
             return res.status(200).json({
               success: false,
@@ -109,11 +107,8 @@ class DeviceService {
           selectedCategories: device.selectedCategories || [],
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 }

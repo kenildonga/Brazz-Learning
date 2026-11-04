@@ -2,7 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import Device from '../models/Device';
 import { getAppModels } from '../models/appModels';
-import { PAGE_LIMIT, parsePage } from '../utils/pagination';
+import { PAGE_LIMIT, paginationMeta, parsePage } from '../utils/pagination';
+import { sendCaught } from '../utils/http';
 import { countVideosByCategory, getVideoModel } from '../utils/video';
 
 class CategoryService {
@@ -43,18 +44,10 @@ class CategoryService {
         success: true,
         message: 'Categories fetched successfully',
         data: sorted.slice(skip, skip + PAGE_LIMIT),
-        pagination: {
-          page,
-          limit: PAGE_LIMIT,
-          total,
-          totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
-        },
+        pagination: paginationMeta(page, total),
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -103,11 +96,8 @@ class CategoryService {
           selectedCategories: device.selectedCategories,
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -134,11 +124,8 @@ class CategoryService {
           selectedCategories: device.selectedCategories || [],
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 }

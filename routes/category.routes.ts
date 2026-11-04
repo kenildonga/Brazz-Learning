@@ -6,12 +6,13 @@ import CategoryService from '../services/category.service';
 
 const router = Router();
 
-router.get('/', apiKeyValidation, tokenValidation, CategoryService.getCategories);
+const guard = [apiKeyValidation, tokenValidation];
+
+router.get('/', ...guard, CategoryService.getCategories);
 
 router.post(
   '/save',
-  apiKeyValidation,
-  tokenValidation,
+  ...guard,
   validate(
     Joi.object({
       categoryId: Joi.string().required(),
@@ -21,6 +22,6 @@ router.post(
   CategoryService.saveCategories,
 );
 
-router.get('/saved', apiKeyValidation, tokenValidation, CategoryService.getSavedCategories);
+router.get('/saved', ...guard, CategoryService.getSavedCategories);
 
 export default router;

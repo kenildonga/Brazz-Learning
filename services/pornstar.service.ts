@@ -1,17 +1,15 @@
 import { Response } from 'express';
-import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/auth';
-import { getAppModels } from '../models/appModels';
-import { readIdParam } from '../utils/http';
-import { PAGE_LIMIT, parsePage } from '../utils/pagination';
+import { readIdParam, sendCaught } from '../utils/http';
+import { PAGE_LIMIT, paginationMeta, parsePage } from '../utils/pagination';
 import { publicThumbnailUrl } from '../utils/thumbnail';
-import { playableFilter } from '../utils/video';
+import { getVideoModel, playableFilter } from '../utils/video';
 
 class PornstarService {
   getPornstars = async (req: AuthRequest, res: Response) => {
     try {
       const appStyle = req.device?.appStyle || 'finance';
-      const { Pornstar } = getAppModels(appStyle);
+      const { personModel: Pornstar } = getVideoModel(appStyle);
       const page = parsePage(req.query.page);
       const skip = (page - 1) * PAGE_LIMIT;
 
@@ -28,18 +26,10 @@ class PornstarService {
         success: true,
         message: 'Pornstars fetched successfully',
         data,
-        pagination: {
-          page,
-          limit: PAGE_LIMIT,
-          total,
-          totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
-        },
+        pagination: paginationMeta(page, total),
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -54,8 +44,7 @@ class PornstarService {
       }
 
       const appStyle = req.device?.appStyle || 'finance';
-      const { Pornstar, Video, personIdField } = getAppModels(appStyle);
-      const videoModel = Video as unknown as mongoose.Model<Record<string, unknown>>;
+      const { personModel: Pornstar, videoModel, personIdField } = getVideoModel(appStyle);
 
       const pornstar = await Pornstar.findById(id, { name: 1, slug: 1 }).lean();
       if (!pornstar) {
@@ -93,18 +82,10 @@ class PornstarService {
             thumbnail: publicThumbnailUrl(video.thumbnail),
           })),
         },
-        pagination: {
-          page,
-          limit: PAGE_LIMIT,
-          total,
-          totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
-        },
+        pagination: paginationMeta(page, total),
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 }

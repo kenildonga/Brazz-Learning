@@ -1,4 +1,4 @@
-import express, { Application } from 'express';
+import express from 'express';
 import cors from 'cors';
 import connectDB from './config/db';
 import dotenv from 'dotenv';
@@ -6,7 +6,7 @@ dotenv.config({ quiet: true });
 import { signingSecret } from './utils/token';
 signingSecret();
 
-const app: Application = express();
+const app = express();
 
 // Middleware
 app.use(express.json());

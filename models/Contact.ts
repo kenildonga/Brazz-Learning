@@ -8,7 +8,7 @@ export interface IContact extends Document {
   appStyle: 'finance' | 'adult';
 }
 
-const ContactSchema: Schema = new Schema(
+const ContactSchema = new Schema<IContact>(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },

@@ -57,7 +57,7 @@ export const apiKeyValidation = (req: Request, res: Response, next: NextFunction
 
 /** Session token from the `token` header or `Authorization: Bearer …`. */
 const readToken = (req: Request) =>
-  req.header('token') || req.header('authorization')?.replace('Bearer ', '');
+  req.header('token') || req.header('authorization')?.replace(/^Bearer /, '');
 
 const sendNoToken = (res: Response) =>
   res.status(401).json({ success: false, message: 'No token provided, authorization denied' });
@@ -76,7 +76,7 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
   if (!token) return sendNoToken(res);
 
   try {
-    const decoded = jwt.verify(token, signingSecret()) as {
+    const decoded = jwt.verify(token, signingSecret(), { algorithms: ['HS256'] }) as {
       deviceUniqueId?: string;
       appUniqueId?: string;
       _id?: string;
@@ -100,8 +100,8 @@ export const tokenValidation = (req: AuthRequest, res: Response, next: NextFunct
       appStyle: decoded.appStyle === 'adult' ? 'adult' : 'finance',
     };
     next();
-  } catch {
-    return sendInvalidToken(res);
+  } catch (error) {
+    return sendVerifyFailure(res, error);
   }
 };
 

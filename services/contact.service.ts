@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Contact from '../models/Contact';
+import { sendCaught } from '../utils/http';
 
 class ContactService {
   create = async (req: Request, res: Response) => {
@@ -27,11 +28,8 @@ class ContactService {
           id: contact._id,
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 }

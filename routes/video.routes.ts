@@ -4,9 +4,11 @@ import VideoService from '../services/video.service';
 
 const router = Router();
 
-router.get('/', apiKeyValidation, tokenValidation, VideoService.getVideos);
-router.get('/search', apiKeyValidation, tokenValidation, VideoService.searchVideos);
-router.get('/reels', apiKeyValidation, tokenValidation, VideoService.getReels);
-router.get('/:id', apiKeyValidation, tokenValidation, VideoService.getVideo);
+const guard = [apiKeyValidation, tokenValidation];
+
+router.get('/', ...guard, VideoService.getVideos);
+router.get('/search', ...guard, VideoService.searchVideos);
+router.get('/reels', ...guard, VideoService.getReels);
+router.get('/:id', ...guard, VideoService.getVideo);
 
 export default router;

@@ -8,7 +8,7 @@ export interface IDevice extends Document {
   selectedCategories: string[];
 }
 
-const DeviceSchema: Schema = new Schema(
+const DeviceSchema = new Schema<IDevice>(
   {
     deviceUniqueId: { type: String, required: true },
     appUniqueId: { type: String, required: true },

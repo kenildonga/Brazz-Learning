@@ -8,7 +8,7 @@ export const UPSTREAM_USER_AGENT =
 /** The :id route parameter when it is a valid ObjectId, otherwise null. */
 export function readIdParam(req: Request) {
   const raw = req.params.id;
-  const id = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : '';
+  const id = Array.isArray(raw) ? raw[0] : raw;
   if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
   return id;
 }
@@ -38,11 +38,11 @@ export function sendError(res: Response, status: number, message: string) {
 }
 
 export function sendCaught(res: Response, error: unknown) {
-  if (error && typeof error === 'object' && (error as { code?: number }).code === 11000) {
-    const keyPattern = (error as { keyPattern?: Record<string, unknown> }).keyPattern;
-    const field = keyPattern ? Object.keys(keyPattern)[0] : 'value';
+  const mongoError = error as { code?: number; keyPattern?: Record<string, unknown> } | null;
+  if (mongoError?.code === 11000) {
+    const field = mongoError.keyPattern ? Object.keys(mongoError.keyPattern)[0] : 'value';
     return sendError(res, 409, `${field || 'value'} already exists`);
   }
-  const message = error instanceof Error ? error.message : 'Internal server error';
-  return sendError(res, 500, message || 'Internal server error');
+  const message = error instanceof Error && error.message ? error.message : 'Internal server error';
+  return sendError(res, 500, message);
 }

@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { readIdParam } from '../utils/http';
-import { PAGE_LIMIT, parsePage } from '../utils/pagination';
+import { readIdParam, sendCaught } from '../utils/http';
+import { PAGE_LIMIT, paginationMeta, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
 import { playbackHlsUrl } from '../utils/playback';
 import { publicThumbnailUrl } from '../utils/thumbnail';
@@ -62,19 +62,11 @@ class VideoService {
         success: true,
         message: 'Videos fetched successfully',
         data: await attachPeople(shuffled, personModel, personIdField),
-        pagination: {
-          page,
-          limit: PAGE_LIMIT,
-          total,
-          totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
-        },
+        pagination: paginationMeta(page, total),
         adsConfig: buildAdsConfig(await getStoredAdSettings()),
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -111,18 +103,10 @@ class VideoService {
         success: true,
         message: 'Videos searched successfully',
         data: await attachPeople(data, personModel, personIdField),
-        pagination: {
-          page,
-          limit: PAGE_LIMIT,
-          total,
-          totalPages: Math.ceil(total / PAGE_LIMIT) || 0,
-        },
+        pagination: paginationMeta(page, total),
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -155,11 +139,8 @@ class VideoService {
         message: 'Reels fetched successfully',
         data: await AdminReelService.listForApp(limit, currentPage),
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 
@@ -219,11 +200,7 @@ class VideoService {
       const movieId = String(video.movieId || '');
       const scrappedSlug = String(video.scrappedSlug || '');
       const m3u8 =
-        appStyle === 'adult'
-          ? playbackHlsUrl(scrappedSlug)
-          : appStyle === 'finance'
-            ? (video.playbackUrl as string)
-            : null;
+        appStyle === 'adult' ? playbackHlsUrl(scrappedSlug) : (video.playbackUrl as string);
 
       const categoriesPromise = categoryIds.length
         ? categoryModel.find({ _id: { $in: categoryIds } }, NAME_PROJECTION).lean()
@@ -256,11 +233,8 @@ class VideoService {
           relatedVideos: await attachPeople(relatedVideos, personModel, personIdField),
         },
       });
-    } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message || 'Internal server error',
-      });
+    } catch (error) {
+      return sendCaught(res, error);
     }
   };
 }
