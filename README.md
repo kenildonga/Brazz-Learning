@@ -30,6 +30,16 @@ Finance video create/update requests require `playbackUrl`, an HTTPS media URL. 
 
 `seed:finance` supplies sample metadata only and preserves any playback URLs already entered. It does not manufacture media or overwrite a real source with a demo.
 
+## Adult playback
+
+Adult video detail returns a signed embed-players playlist URL in `data.video.m3u8`, built from the video's `scrappedSlug` without contacting the upstream site:
+
+```
+<PLAYER_BASE_URL>/hls/<token>/index.m3u8
+```
+
+The token is an HS256 JWT (`site: "pornhd3x"`, `slug`, `purpose: "hls"`, `iat`, `exp`) signed with `PLAYBACK_JWT_SECRET`. embed-players verifies it with the same secret and returns the stored playlist; segments load directly from the CDN, so the token only gates the playlist request. The URL is valid for `PLAYBACK_TOKEN_TTL_SECONDS` (default four hours, at most twelve); clients should request video detail again for a fresh URL after it expires. Set `PLAYER_BASE_URL` (HTTPS, except localhost) and `PLAYBACK_JWT_SECRET` (32+ characters, different from `JWT_SECRET`, identical in embed-players). Without them, adult video detail returns 500 naming the missing variable; finance playback is unaffected. Videos without a `scrappedSlug` return `m3u8: null`.
+
 ## Bootstrap and build
 
 Set a unique `ADMIN_PASSWORD` of at least 12 characters before running `bun run seed:admin` or `bun run seed:admin:reset`. Existing admins are unchanged unless reset is explicitly selected. Keep production credentials out of source files.

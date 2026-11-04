@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { readIdParam } from '../utils/http';
 import { PAGE_LIMIT, parsePage } from '../utils/pagination';
 import { formatDuration } from '../utils/duration';
-import { fetchM3u8Url } from '../utils/m3u8';
+import { playbackHlsUrl } from '../utils/playback';
 import { publicThumbnailUrl } from '../utils/thumbnail';
 import {
   fetchForYouReels,
@@ -218,10 +218,12 @@ class VideoService {
 
       const movieId = String(video.movieId || '');
       const scrappedSlug = String(video.scrappedSlug || '');
-      const m3u8Promise =
-        appStyle === 'adult' && movieId && scrappedSlug
-          ? fetchM3u8Url(movieId, scrappedSlug)
-          : Promise.resolve(appStyle === 'finance' ? (video.playbackUrl as string) : null);
+      const m3u8 =
+        appStyle === 'adult'
+          ? playbackHlsUrl(scrappedSlug)
+          : appStyle === 'finance'
+            ? (video.playbackUrl as string)
+            : null;
 
       const categoriesPromise = categoryIds.length
         ? categoryModel.find({ _id: { $in: categoryIds } }, NAME_PROJECTION).lean()
@@ -230,9 +232,8 @@ class VideoService {
         ? personModel.find({ _id: { $in: personIds } }, NAME_PROJECTION).lean()
         : Promise.resolve([]);
 
-      const [relatedVideos, m3u8, categories, peopleIds] = await Promise.all([
+      const [relatedVideos, categories, peopleIds] = await Promise.all([
         relatedPromise,
-        m3u8Promise,
         categoriesPromise,
         peoplePromise,
       ]);
